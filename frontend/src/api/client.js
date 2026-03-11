@@ -24,7 +24,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      if (localStorage.getItem('craftconnect_token')) {
+      const currentPath = window.location.pathname;
+      if (localStorage.getItem('craftconnect_token') && currentPath !== '/login' && currentPath !== '/register') {
         localStorage.removeItem('craftconnect_token');
         localStorage.removeItem('craftconnect_user');
         window.location.href = '/login';

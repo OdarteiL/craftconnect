@@ -52,6 +52,10 @@ export default function ProductPage() {
   const handleReview = async (e) => {
     e.preventDefault();
     if (!user) return;
+    if (!reviewForm.comment.trim()) {
+      alert('Please write a comment for your review.');
+      return;
+    }
     setSubmitting(true);
     try {
       await api.post('/reviews', { product_id: product.id, ...reviewForm });

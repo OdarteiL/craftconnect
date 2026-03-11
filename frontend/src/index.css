@@ -1353,3 +1353,204 @@ tr:hover td {
     text-align: center;
   }
 }
+
+/* ============================================
+   Auth Pages
+   ============================================ */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 48px 40px;
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.auth-logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--terracotta) 100%);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  box-shadow: var(--shadow-glow);
+}
+
+.auth-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.auth-header p {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.auth-form {
+  margin-bottom: 32px;
+}
+
+.auth-form .form-group {
+  margin-bottom: 24px;
+}
+
+.auth-form label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-divider span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.auth-footer {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.auth-footer a {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-footer a:hover {
+  color: var(--gold-light);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* Role selection cards */
+.role-option {
+  cursor: pointer;
+}
+
+.role-option input[type="radio"] {
+  display: none;
+}
+
+.role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  text-align: center;
+}
+
+.role-option input[type="radio"]:checked + .role-card {
+  border-color: var(--gold);
+  background: rgba(212, 160, 23, 0.1);
+}
+
+.role-card:hover {
+  border-color: var(--gold);
+}
+
+.role-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.role-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+/* ============================================
+   Responsive Improvements
+   ============================================ */
+@media (max-width: 1024px) {
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .cart-item-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .product-detail {
+    grid-template-columns: 1fr;
+  }
+  
+  .auth-container {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+}
