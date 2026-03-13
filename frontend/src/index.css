@@ -1063,6 +1063,33 @@ textarea.form-control {
   color: var(--text-muted);
 }
 
+.auction-status-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.auction-status-badge.active {
+  background: rgba(204, 85, 0, 0.15);
+  color: var(--terracotta);
+  border: 1px solid rgba(204, 85, 0, 0.3);
+}
+
+.auction-status-badge.upcoming {
+  background: rgba(255, 152, 0, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.auction-status-badge.ended {
+  background: rgba(117, 117, 117, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(117, 117, 117, 0.3);
+}
+
 /* ============================================
    Cart & Checkout
    ============================================ */
