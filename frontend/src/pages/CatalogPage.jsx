@@ -66,14 +66,30 @@ export default function CatalogPage() {
       .catch(() => {
         // Use dummy data with filters
         let filtered = [...DUMMY_PRODUCTS];
+        
+        // Search filter
         if (search) {
           filtered = filtered.filter(p => 
-            p.name.toLowerCase().includes(search.toLowerCase())
+            p.name.toLowerCase().includes(search.toLowerCase()) ||
+            p.artisan.first_name.toLowerCase().includes(search.toLowerCase()) ||
+            p.artisan.last_name.toLowerCase().includes(search.toLowerCase())
           );
         }
+        
+        // Category filter
         if (category) {
           filtered = filtered.filter(p => p.category.name === category);
         }
+        
+        // Sort
+        if (sort === 'price_asc') {
+          filtered.sort((a, b) => a.price - b.price);
+        } else if (sort === 'price_desc') {
+          filtered.sort((a, b) => b.price - a.price);
+        } else if (sort === 'name') {
+          filtered.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        
         setProducts(filtered);
         setPagination({ pages: 1, total: filtered.length });
       })
