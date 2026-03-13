@@ -3,29 +3,29 @@ import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 
 const DUMMY_PRODUCTS = [
-  { id: 1, name: 'Handwoven Basket Set', price: 85.00, artisan: { first_name: 'Akua', last_name: 'Mensah', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400'], category: { name: 'Baskets' }, stock: 3 },
-  { id: 2, name: 'Kente Cloth Runner', price: 120.00, artisan: { first_name: 'Kwame', last_name: 'Asante', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=400'], category: { name: 'Textiles' }, stock: 8 },
-  { id: 3, name: 'Clay Water Pot', price: 45.00, artisan: { first_name: 'Ama', last_name: 'Osei', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400'], category: { name: 'Pottery' }, stock: 12 },
-  { id: 4, name: 'Beaded Necklace', price: 35.00, artisan: { first_name: 'Yaa', last_name: 'Boateng', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400'], category: { name: 'Jewelry' }, stock: 4 },
+  { id: 1, name: 'Handwoven Basket Set', price: 85.00, artisan: { first_name: 'Akua', last_name: 'Mensah', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400'], category: { name: 'Baskets & Weaving' }, stock: 3 },
+  { id: 2, name: 'Kente Cloth Runner', price: 120.00, artisan: { first_name: 'Kwame', last_name: 'Asante', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=400'], category: { name: 'Textiles & Kente' }, stock: 8 },
+  { id: 3, name: 'Clay Water Pot', price: 45.00, artisan: { first_name: 'Ama', last_name: 'Osei', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400'], category: { name: 'Pottery & Ceramics' }, stock: 12 },
+  { id: 4, name: 'Beaded Necklace', price: 35.00, artisan: { first_name: 'Yaa', last_name: 'Boateng', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400'], category: { name: 'Beads & Jewelry' }, stock: 4 },
   { id: 5, name: 'Wood Carved Mask', price: 95.00, artisan: { first_name: 'Kofi', last_name: 'Mensah', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400'], category: { name: 'Wood Carvings' }, stock: 6 },
-  { id: 6, name: 'Woven Table Mat Set', price: 28.00, artisan: { first_name: 'Efua', last_name: 'Darko', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400'], category: { name: 'Baskets' }, stock: 15 },
-  { id: 7, name: 'Traditional Drum', price: 150.00, artisan: { first_name: 'Kwabena', last_name: 'Owusu', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=400'], category: { name: 'Instruments' }, stock: 2 },
-  { id: 8, name: 'Ceramic Bowl Set', price: 55.00, artisan: { first_name: 'Abena', last_name: 'Adjei', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=400'], category: { name: 'Pottery' }, stock: 10 },
-  { id: 9, name: 'Leather Sandals', price: 65.00, artisan: { first_name: 'Kwesi', last_name: 'Appiah', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1603487742131-4160ec999306?w=400'], category: { name: 'Leather' }, stock: 7 },
-  { id: 10, name: 'Painted Canvas Art', price: 180.00, artisan: { first_name: 'Adwoa', last_name: 'Frimpong', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400'], category: { name: 'Art' }, stock: 3 },
-  { id: 11, name: 'Brass Bracelet', price: 42.00, artisan: { first_name: 'Kojo', last_name: 'Mensah', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=400'], category: { name: 'Jewelry' }, stock: 9 },
-  { id: 12, name: 'Woven Wall Hanging', price: 75.00, artisan: { first_name: 'Esi', last_name: 'Agyeman', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400'], category: { name: 'Textiles' }, stock: 5 }
+  { id: 6, name: 'Woven Table Mat Set', price: 28.00, artisan: { first_name: 'Efua', last_name: 'Darko', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400'], category: { name: 'Baskets & Weaving' }, stock: 15 },
+  { id: 7, name: 'Traditional Drum', price: 150.00, artisan: { first_name: 'Kwabena', last_name: 'Owusu', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=400'], category: { name: 'Musical Instruments' }, stock: 2 },
+  { id: 8, name: 'Ceramic Bowl Set', price: 55.00, artisan: { first_name: 'Abena', last_name: 'Adjei', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=400'], category: { name: 'Pottery & Ceramics' }, stock: 10 },
+  { id: 9, name: 'Leather Sandals', price: 65.00, artisan: { first_name: 'Kwesi', last_name: 'Appiah', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1603487742131-4160ec999306?w=400'], category: { name: 'Leather Goods' }, stock: 7 },
+  { id: 10, name: 'Painted Canvas Art', price: 180.00, artisan: { first_name: 'Adwoa', last_name: 'Frimpong', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400'], category: { name: 'Paintings & Art' }, stock: 3 },
+  { id: 11, name: 'Brass Bracelet', price: 42.00, artisan: { first_name: 'Kojo', last_name: 'Mensah', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=400'], category: { name: 'Beads & Jewelry' }, stock: 9 },
+  { id: 12, name: 'Woven Wall Hanging', price: 75.00, artisan: { first_name: 'Esi', last_name: 'Agyeman', location: 'Aburi' }, images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400'], category: { name: 'Textiles & Kente' }, stock: 5 }
 ];
 
 const DUMMY_CATEGORIES = [
-  { id: 1, name: 'Baskets' },
-  { id: 2, name: 'Textiles' },
-  { id: 3, name: 'Pottery' },
-  { id: 4, name: 'Jewelry' },
+  { id: 1, name: 'Baskets & Weaving' },
+  { id: 2, name: 'Textiles & Kente' },
+  { id: 3, name: 'Pottery & Ceramics' },
+  { id: 4, name: 'Beads & Jewelry' },
   { id: 5, name: 'Wood Carvings' },
-  { id: 6, name: 'Leather' },
-  { id: 7, name: 'Art' },
-  { id: 8, name: 'Instruments' }
+  { id: 6, name: 'Leather Goods' },
+  { id: 7, name: 'Paintings & Art' },
+  { id: 8, name: 'Musical Instruments' }
 ];
 
 export default function CatalogPage() {
