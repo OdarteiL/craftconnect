@@ -61,23 +61,27 @@ export default function CatalogPage() {
         if (r.data.products?.length > 0) {
           setProducts(r.data.products);
           setPagination(r.data.pagination || {});
+          setLoading(false);
+          return;
         }
+        throw new Error('No API data');
       })
       .catch(() => {
         // Use dummy data with filters
         let filtered = [...DUMMY_PRODUCTS];
         
         // Search filter
-        if (search) {
+        if (search.trim()) {
+          const searchLower = search.toLowerCase();
           filtered = filtered.filter(p => 
-            p.name.toLowerCase().includes(search.toLowerCase()) ||
-            p.artisan.first_name.toLowerCase().includes(search.toLowerCase()) ||
-            p.artisan.last_name.toLowerCase().includes(search.toLowerCase())
+            p.name.toLowerCase().includes(searchLower) ||
+            p.artisan.first_name.toLowerCase().includes(searchLower) ||
+            p.artisan.last_name.toLowerCase().includes(searchLower)
           );
         }
         
         // Category filter
-        if (category) {
+        if (category && category.trim()) {
           filtered = filtered.filter(p => p.category.name === category);
         }
         
@@ -92,8 +96,8 @@ export default function CatalogPage() {
         
         setProducts(filtered);
         setPagination({ pages: 1, total: filtered.length });
-      })
-      .finally(() => setLoading(false));
+        setLoading(false);
+      });
   }, [search, category, sort, page]);
 
   const handleSearch = (e) => {
