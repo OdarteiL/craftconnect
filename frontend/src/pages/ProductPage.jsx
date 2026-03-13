@@ -56,6 +56,54 @@ const DUMMY_PRODUCTS = {
       { id: 4, rating: 5, comment: 'Gorgeous! I get compliments every time I wear it.', buyer: { first_name: 'Emily', last_name: 'Brown' }, created_at: '2026-03-11' },
       { id: 5, rating: 5, comment: 'The craftsmanship is incredible. Worth every penny.', buyer: { first_name: 'Michael', last_name: 'Lee' }, created_at: '2026-03-09' }
     ]
+  },
+  5: { 
+    id: 5, name: 'Wood Carved Mask', price: 95.00, stock: 6,
+    artisan: { first_name: 'Kofi', last_name: 'Mensah', location: 'Aburi' }, 
+    images: ['https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=800'], 
+    category: { name: 'Wood Carvings' }, 
+    views: 278,
+    description: 'Intricately carved wooden mask representing traditional Ghanaian symbolism. Hand-carved from a single piece of mahogany wood. A stunning piece of African art.',
+    story: 'Kofi learned wood carving from his father and has been perfecting his craft for over 25 years. Each mask takes approximately one week to carve and finish.',
+    materials: ['Mahogany Wood', 'Natural Stain', 'Beeswax Polish'],
+    reviews: []
+  },
+  6: { 
+    id: 6, name: 'Woven Table Mat Set', price: 28.00, stock: 15,
+    artisan: { first_name: 'Efua', last_name: 'Darko', location: 'Aburi' }, 
+    images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800'], 
+    category: { name: 'Baskets & Weaving' }, 
+    views: 156,
+    description: 'Set of 4 handwoven table mats perfect for dining. Made from durable natural fibers with beautiful geometric patterns. Easy to clean and maintain.',
+    story: 'Efua specializes in functional woven items that bring traditional craftsmanship into everyday life. These mats are both practical and beautiful.',
+    materials: ['Raffia', 'Natural Fiber', 'Organic Dyes'],
+    reviews: [
+      { id: 6, rating: 4, comment: 'Great quality and perfect size for my table.', buyer: { first_name: 'David', last_name: 'Wilson' }, created_at: '2026-03-07' }
+    ]
+  },
+  7: { 
+    id: 7, name: 'Traditional Drum', price: 150.00, stock: 2,
+    artisan: { first_name: 'Kwabena', last_name: 'Owusu', location: 'Aburi' }, 
+    images: ['https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=800'], 
+    category: { name: 'Musical Instruments' }, 
+    views: 423,
+    description: 'Authentic African djembe drum handcrafted using traditional methods. Features hand-carved shell and goat skin head. Produces rich, resonant tones.',
+    story: 'Kwabena comes from a long line of drum makers. Each drum is blessed in a traditional ceremony before being sold, ensuring it carries good energy.',
+    materials: ['Hardwood', 'Goat Skin', 'Natural Rope'],
+    reviews: [
+      { id: 7, rating: 5, comment: 'Amazing sound quality! Worth every cedi.', buyer: { first_name: 'Lisa', last_name: 'Anderson' }, created_at: '2026-03-06' }
+    ]
+  },
+  8: { 
+    id: 8, name: 'Ceramic Bowl Set', price: 55.00, stock: 10,
+    artisan: { first_name: 'Abena', last_name: 'Adjei', location: 'Aburi' }, 
+    images: ['https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=800'], 
+    category: { name: 'Pottery & Ceramics' }, 
+    views: 201,
+    description: 'Set of 3 handcrafted ceramic bowls with traditional patterns. Perfect for serving or display. Each bowl is unique with slight variations.',
+    story: 'Abena creates functional pottery that honors traditional designs while being suitable for modern homes. Each piece is food-safe and dishwasher friendly.',
+    materials: ['Stoneware Clay', 'Food-Safe Glaze', 'Natural Pigments'],
+    reviews: []
   }
 };
 
