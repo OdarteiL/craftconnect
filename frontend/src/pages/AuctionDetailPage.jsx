@@ -124,6 +124,21 @@ export default function AuctionDetailPage() {
   const handleBid = async (e) => {
     e.preventDefault();
     
+    if (!user) { 
+      setMessage(
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ marginBottom: '12px' }}>Please login to place a bid</p>
+          <button 
+            onClick={() => window.location.href = '/login'} 
+            className="btn btn-primary"
+          >
+            Login to Bid
+          </button>
+        </div>
+      ); 
+      return; 
+    }
+    
     const amount = parseFloat(bidAmount);
     const currentPrice = parseFloat(auction.current_price || auction.starting_price);
     
@@ -206,19 +221,7 @@ export default function AuctionDetailPage() {
                 <div className="amount">GHS {currentPrice.toFixed(2)}</div>
               </div>
 
-              {!user && auction.status === 'active' && (
-                <div className="alert alert-info" style={{ textAlign: 'center' }}>
-                  <p style={{ marginBottom: '12px' }}>Please login to place a bid</p>
-                  <button 
-                    onClick={() => window.location.href = '/login'} 
-                    className="btn btn-primary"
-                  >
-                    Login to Bid
-                  </button>
-                </div>
-              )}
-
-              {user && auction.status === 'active' && (
+              {auction.status === 'active' && (
                 <form onSubmit={handleBid}>
                   <div className="form-group">
                     <label>Your Bid Amount (GHS)</label>
@@ -239,7 +242,7 @@ export default function AuctionDetailPage() {
                     {bidding ? 'Placing Bid...' : `🔨 Place Bid — GHS ${parseFloat(bidAmount || 0).toFixed(2)}`}
                   </button>
                   {message && (
-                    <div className={`alert ${message.includes('✓') ? 'alert-success' : 'alert-info'}`}>
+                    <div className={`alert ${typeof message === 'string' && message.includes('✓') ? 'alert-success' : 'alert-info'}`}>
                       {message}
                     </div>
                   )}
