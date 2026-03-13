@@ -111,15 +111,14 @@ export default function CatalogPage() {
 
         {/* Filters */}
         <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <form onSubmit={handleSearch} style={{ flex: 1, minWidth: '200px' }}>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            />
-          </form>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: '200px' }}
+          />
 
           <select
             className="form-control"
