@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const { Auction, Bid, Product, User, Notification } = require('../models');
-const { authenticate, authorize, optionalAuth } = require('../middleware/auth');
+const { authenticate, requireRole, optionalAuth } = require('../middleware/auth');
 const { getCache, setCache, invalidateCache } = require('../services/cache');
 
 const router = express.Router();
@@ -80,7 +80,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/auctions — create auction
-router.post('/', authenticate, authorize('artisan', 'admin'), async (req, res) => {
+router.post('/', authenticate, requireRole('artisan', 'admin'), async (req, res) => {
   try {
     const { product_id, starting_price, reserve_price, start_time, end_time } = req.body;
 

@@ -1,55 +1,55 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api/client';
+import { useAuth0 } from '@auth0/auth0-react';
+import api from '../api/auth0Client';
 
 const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
+  const { user: auth0User, isAuthenticated, isLoading, loginWithRedirect, logout: auth0Logout, getAccessTokenSilently } = useAuth0();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUser = async () => {
+    if (!isAuthenticated) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await api.get('/auth/me');
+      setUser(res.data.user);
+    } catch (err) {
+      console.error('Failed to fetch user:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const storedUser = localStorage.getItem('craftconnect_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    if (!isLoading) {
+      fetchUser();
     }
-    setLoading(false);
-  }, []);
-
-  const login = async (email, password) => {
-    try {
-      const { data } = await api.post('/auth/login', { email, password });
-      localStorage.setItem('craftconnect_token', data.token);
-      localStorage.setItem('craftconnect_user', JSON.stringify(data.user));
-      setUser(data.user);
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const register = async (userData) => {
-    try {
-      const { data } = await api.post('/auth/register', userData);
-      localStorage.setItem('craftconnect_token', data.token);
-      localStorage.setItem('craftconnect_user', JSON.stringify(data.user));
-      setUser(data.user);
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('craftconnect_token');
-    localStorage.removeItem('craftconnect_user');
-    setUser(null);
-  };
+  }, [isAuthenticated, isLoading]);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, loading }}>
+    <AuthContext.Provider value={{
+      user,
+      loading: loading || isLoading,
+      login: () => loginWithRedirect(),
+      logout: () => auth0Logout({ logoutParams: { returnTo: window.location.origin } }),
+      getAccessToken: getAccessTokenSilently,
+      refreshUser: fetchUser
+    }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};

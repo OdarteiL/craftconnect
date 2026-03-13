@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth0 } from '@auth0/auth0-react';
 import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth0();
   const { count } = useCart();
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path ? 'active' : '';
@@ -15,7 +16,6 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand">
-          <div className="brand-icon">🏺</div>
           <span>CraftConnect</span>
         </Link>
 
@@ -27,41 +27,33 @@ export default function Navbar() {
           <Link to="/products" className={isActive('/products')} onClick={() => setOpen(false)}>Shop</Link>
           <Link to="/auctions" className={isActive('/auctions')} onClick={() => setOpen(false)}>Auctions</Link>
 
-          {user && (
+          {isAuthenticated && (
             <>
               <Link to="/orders" className={isActive('/orders')} onClick={() => setOpen(false)}>Orders</Link>
-              {user.role === 'artisan' && (
-                <Link to="/dashboard" className={isActive('/dashboard')} onClick={() => setOpen(false)}>Dashboard</Link>
-              )}
-              {user.role === 'admin' && (
-                <a href="/admin" className={isActive('/admin')} onClick={() => setOpen(false)}>Admin</a>
-              )}
+              <Link to="/dashboard" className={isActive('/dashboard')} onClick={() => setOpen(false)}>Dashboard</Link>
             </>
           )}
 
           <Link to="/cart" className={`nav-cart ${isActive('/cart')}`} onClick={() => setOpen(false)}>
-            🛒 Cart
+            Cart
             {count > 0 && <span className="badge">{count}</span>}
           </Link>
 
           <div className="nav-auth">
-            {user ? (
+            {isAuthenticated ? (
               <>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '8px' }}>
-                  Hi, {user.first_name}
+                  Hi, {user?.name || user?.email}
                 </span>
-                <button onClick={() => { logout(); setOpen(false); }} className="btn btn-sm btn-outline">
+                <button onClick={() => { logout({ logoutParams: { returnTo: window.location.origin } }); setOpen(false); }} className="btn btn-sm btn-outline">
                   Logout
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className={`btn btn-sm btn-secondary ${isActive('/login')}`} onClick={() => setOpen(false)}>
-                  Login
-                </Link>
-                <Link to="/register" className={`btn btn-sm btn-primary ${isActive('/register')}`} onClick={() => setOpen(false)}>
-                  Sign Up
-                </Link>
+                <button onClick={() => { navigate('/login'); setOpen(false); }} className="btn btn-sm btn-primary">
+                  Sign In
+                </button>
               </>
             )}
           </div>

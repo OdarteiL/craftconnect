@@ -1,44 +1,58 @@
-const jwt = require('jsonwebtoken');
+const { auth } = require('express-oauth2-jwt-bearer');
 const { User } = require('../models');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'craftconnect_jwt_super_secret_key_2026';
+const checkJwt = auth({
+  audience: process.env.AUTH0_AUDIENCE,
+  issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
+});
 
-function authenticate(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Access denied. No token provided.' });
-  }
+async function authenticate(req, res, next) {
+  checkJwt(req, res, async (err) => {
+    if (err) return next(err);
+    
+    try {
+      const auth0Id = req.auth.payload.sub;
+      let user = await User.findOne({ where: { auth0_id: auth0Id } });
 
-  try {
-    const token = header.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token.' });
-  }
+      if (!user) {
+        user = await User.create({
+          auth0_id: auth0Id,
+          email: req.auth.payload.email || req.auth.payload.sub,
+          first_name: req.auth.payload.given_name || 'User',
+          last_name: req.auth.payload.family_name || '',
+          role: 'buyer',
+          is_verified: true,
+          is_active: true
+        });
+      }
+
+      req.user = { id: user.id, role: user.role, email: user.email };
+      next();
+    } catch (error) {
+      console.error('Auth middleware error:', error);
+      res.status(500).json({ error: 'Authentication failed' });
+    }
+  });
 }
 
-function authorize(...roles) {
+function optionalAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return next();
+  }
+  authenticate(req, res, next);
+}
+
+function requireRole(...roles) {
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions.' });
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
     next();
   };
 }
 
-function optionalAuth(req, res, next) {
-  const header = req.headers.authorization;
-  if (header && header.startsWith('Bearer ')) {
-    try {
-      const token = header.split(' ')[1];
-      req.user = jwt.verify(token, JWT_SECRET);
-    } catch (err) {
-      // Token invalid, continue without user
-    }
-  }
-  next();
-}
-
-module.exports = { authenticate, authorize, optionalAuth, JWT_SECRET };
+module.exports = { authenticate, optionalAuth, requireRole };

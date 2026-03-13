@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const { Product, User, Category, Review } = require('../models');
-const { authenticate, authorize, optionalAuth } = require('../middleware/auth');
+const { authenticate, requireRole, optionalAuth } = require('../middleware/auth');
 const { getCache, setCache, invalidateCache } = require('../services/cache');
 
 const router = express.Router();
@@ -119,7 +119,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 });
 
 // POST /api/products — artisan create product
-router.post('/', authenticate, authorize('artisan', 'admin'), async (req, res) => {
+router.post('/', authenticate, requireRole('artisan', 'admin'), async (req, res) => {
   try {
     const { name, description, story, price, stock, category_id, images, materials } = req.body;
 
@@ -151,7 +151,7 @@ router.post('/', authenticate, authorize('artisan', 'admin'), async (req, res) =
 });
 
 // PUT /api/products/:id
-router.put('/:id', authenticate, authorize('artisan', 'admin'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('artisan', 'admin'), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (!product) return res.status(404).json({ error: 'Product not found.' });
@@ -171,7 +171,7 @@ router.put('/:id', authenticate, authorize('artisan', 'admin'), async (req, res)
 });
 
 // DELETE /api/products/:id
-router.delete('/:id', authenticate, authorize('artisan', 'admin'), async (req, res) => {
+router.delete('/:id', authenticate, requireRole('artisan', 'admin'), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (!product) return res.status(404).json({ error: 'Product not found.' });
