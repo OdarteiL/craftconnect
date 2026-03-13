@@ -123,21 +123,6 @@ export default function AuctionDetailPage() {
 
   const handleBid = async (e) => {
     e.preventDefault();
-    if (!user) { 
-      setMessage(
-        <div>
-          Please login to place a bid.{' '}
-          <button 
-            onClick={() => window.location.href = '/login'} 
-            className="btn btn-primary btn-sm"
-            style={{ marginLeft: '8px' }}
-          >
-            Login
-          </button>
-        </div>
-      ); 
-      return; 
-    }
     
     const amount = parseFloat(bidAmount);
     const currentPrice = parseFloat(auction.current_price || auction.starting_price);
@@ -221,7 +206,19 @@ export default function AuctionDetailPage() {
                 <div className="amount">GHS {currentPrice.toFixed(2)}</div>
               </div>
 
-              {auction.status === 'active' && (
+              {!user && auction.status === 'active' && (
+                <div className="alert alert-info" style={{ textAlign: 'center' }}>
+                  <p style={{ marginBottom: '12px' }}>Please login to place a bid</p>
+                  <button 
+                    onClick={() => window.location.href = '/login'} 
+                    className="btn btn-primary"
+                  >
+                    Login to Bid
+                  </button>
+                </div>
+              )}
+
+              {user && auction.status === 'active' && (
                 <form onSubmit={handleBid}>
                   <div className="form-group">
                     <label>Your Bid Amount (GHS)</label>
