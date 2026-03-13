@@ -89,11 +89,11 @@
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  color: var(--text-primary);
+  color: #FFFFFF;
 }
 
 .auth-form-subtitle {
-  color: var(--text-secondary);
+  color: #E0E0E0;
   font-size: 1rem;
 }
 
