@@ -73,7 +73,7 @@
   align-items: center;
   justify-content: center;
   padding: 3rem;
-  background: var(--bg-primary);
+  background: #F5F5F5;
 }
 
 .auth-form-container {
