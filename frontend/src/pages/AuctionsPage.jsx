@@ -2,6 +2,71 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
 
+const DUMMY_AUCTIONS = [
+  { 
+    id: 1, 
+    status: 'active', 
+    starting_price: 200, 
+    current_price: 350, 
+    bid_count: 12,
+    end_time: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    product: { name: 'Antique Kente Cloth', images: ['https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=400'] },
+    artisan: { first_name: 'Kwame', last_name: 'Asante' }
+  },
+  { 
+    id: 2, 
+    status: 'active', 
+    starting_price: 150, 
+    current_price: 280, 
+    bid_count: 8,
+    end_time: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+    product: { name: 'Hand-Carved Stool', images: ['https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400'] },
+    artisan: { first_name: 'Kofi', last_name: 'Mensah' }
+  },
+  { 
+    id: 3, 
+    status: 'active', 
+    starting_price: 100, 
+    current_price: 100, 
+    bid_count: 0,
+    end_time: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    product: { name: 'Ceremonial Mask', images: ['https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400'] },
+    artisan: { first_name: 'Ama', last_name: 'Osei' }
+  },
+  { 
+    id: 4, 
+    status: 'upcoming', 
+    starting_price: 250, 
+    current_price: 250, 
+    bid_count: 0,
+    start_time: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    end_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    product: { name: 'Royal Drum Set', images: ['https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=400'] },
+    artisan: { first_name: 'Kwabena', last_name: 'Owusu' }
+  },
+  { 
+    id: 5, 
+    status: 'upcoming', 
+    starting_price: 180, 
+    current_price: 180, 
+    bid_count: 0,
+    start_time: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    end_time: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+    product: { name: 'Beaded Crown', images: ['https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400'] },
+    artisan: { first_name: 'Yaa', last_name: 'Boateng' }
+  },
+  { 
+    id: 6, 
+    status: 'ended', 
+    starting_price: 120, 
+    current_price: 420, 
+    bid_count: 15,
+    end_time: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    product: { name: 'Vintage Basket Collection', images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400'] },
+    artisan: { first_name: 'Akua', last_name: 'Mensah' }
+  }
+];
+
 function CountdownTimer({ endTime }) {
   const [time, setTime] = useState({});
 
@@ -32,20 +97,29 @@ function CountdownTimer({ endTime }) {
 }
 
 export default function AuctionsPage() {
-  const [auctions, setAuctions] = useState([]);
+  const [auctions, setAuctions] = useState(DUMMY_AUCTIONS);
   const [status, setStatus] = useState('active');
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({ pages: 1, total: DUMMY_AUCTIONS.length });
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setLoading(true);
     api.get(`/auctions?status=${status}&page=${page}&limit=12`)
       .then(r => {
-        setAuctions(r.data.auctions || []);
-        setPagination(r.data.pagination || {});
+        if (r.data.auctions?.length > 0) {
+          setAuctions(r.data.auctions);
+          setPagination(r.data.pagination || {});
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        // Use dummy data with status filter
+        const filtered = status === 'all' 
+          ? DUMMY_AUCTIONS 
+          : DUMMY_AUCTIONS.filter(a => a.status === status);
+        setAuctions(filtered);
+        setPagination({ pages: 1, total: filtered.length });
+      })
       .finally(() => setLoading(false));
   }, [status, page]);
 
@@ -53,11 +127,11 @@ export default function AuctionsPage() {
     <div className="page">
       <div className="container">
         <div className="page-header">
-          <h1>🔨 Auctions</h1>
+          <h1>🔨 Live Auctions</h1>
           <p>Bid on unique handcrafted items and find one-of-a-kind treasures</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', justifyContent: 'center', flexWrap: 'wrap' }}>
           {['active', 'upcoming', 'ended', 'all'].map(s => (
             <button
               key={s}
@@ -81,13 +155,13 @@ export default function AuctionsPage() {
           <>
             <div className="grid grid-3">
               {auctions.map(auction => (
-                <Link to={`/auctions/${auction.id}`} key={auction.id} className="card">
+                <Link to={`/auctions/${auction.id}`} key={auction.id} className="card auction-card">
                   <div className="card-image">
                     <img
                       src={auction.product?.images?.[0] || `https://placehold.co/400x300/1A1A25/CC5500?text=Auction`}
                       alt={auction.product?.name}
                     />
-                    <span className={`card-badge ${auction.status === 'active' ? 'auction' : ''}`}>
+                    <span className={`card-badge ${auction.status === 'active' ? 'auction' : auction.status === 'upcoming' ? 'upcoming' : 'ended'}`}>
                       {auction.status === 'active' ? '🔴 Live' : auction.status === 'upcoming' ? '⏳ Upcoming' : '🏁 Ended'}
                     </span>
                   </div>
@@ -96,6 +170,14 @@ export default function AuctionsPage() {
                     <div className="card-title">{auction.product?.name || 'Auction Item'}</div>
                     
                     {auction.status === 'active' && <CountdownTimer endTime={auction.end_time} />}
+                    {auction.status === 'upcoming' && (
+                      <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center', margin: '12px 0' }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Starts in</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--gold)' }}>
+                          {Math.ceil((new Date(auction.start_time) - new Date()) / (24 * 60 * 60 * 1000))} days
+                        </div>
+                      </div>
+                    )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
                       <div>
