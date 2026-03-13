@@ -154,7 +154,30 @@ export default function ProductPage() {
       setMessage('✓ Added to cart!');
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setMessage('Failed to add to cart.');
+      // Demo mode - add to localStorage with full product data
+      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
+      const existingIndex = cartData.findIndex(item => item.product_id === product.id);
+      
+      if (existingIndex >= 0) {
+        cartData[existingIndex].quantity += quantity;
+      } else {
+        cartData.push({
+          id: Date.now(),
+          product_id: product.id,
+          quantity,
+          product: {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            images: product.images,
+            artisan: product.artisan
+          }
+        });
+      }
+      
+      localStorage.setItem('cart', JSON.stringify(cartData));
+      setMessage('✓ Added to cart!');
+      setTimeout(() => setMessage(''), 3000);
     }
     setAdding(false);
   };

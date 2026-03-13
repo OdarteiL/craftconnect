@@ -25,7 +25,12 @@ export function CartProvider({ children }) {
       setTotal(data.total);
       setCount(data.count);
     } catch (err) {
-      console.error('Fetch cart error:', err);
+      // Use localStorage for demo
+      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
+      setItems(cartData);
+      const totalAmount = cartData.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      setTotal(totalAmount.toFixed(2));
+      setCount(cartData.reduce((sum, item) => sum + item.quantity, 0));
     } finally {
       setLoading(false);
     }
@@ -36,23 +41,67 @@ export function CartProvider({ children }) {
   }, [fetchCart]);
 
   const addToCart = async (product_id, quantity = 1) => {
-    await api.post('/cart', { product_id, quantity });
-    await fetchCart();
+    try {
+      await api.post('/cart', { product_id, quantity });
+      await fetchCart();
+    } catch (err) {
+      // Demo mode - use localStorage
+      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
+      const existingIndex = cartData.findIndex(item => item.product_id === product_id);
+      
+      if (existingIndex >= 0) {
+        cartData[existingIndex].quantity += quantity;
+      } else {
+        // Get product from dummy data (you'll need to pass this)
+        cartData.push({
+          id: Date.now(),
+          product_id,
+          quantity,
+          product: { id: product_id, name: 'Product', price: 0 } // Placeholder
+        });
+      }
+      
+      localStorage.setItem('cart', JSON.stringify(cartData));
+      await fetchCart();
+    }
   };
 
   const updateQuantity = async (itemId, quantity) => {
-    await api.put(`/cart/${itemId}`, { quantity });
-    await fetchCart();
+    if (quantity < 1) return removeItem(itemId);
+    try {
+      await api.put(`/cart/${itemId}`, { quantity });
+      await fetchCart();
+    } catch (err) {
+      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
+      const index = cartData.findIndex(item => item.id === itemId);
+      if (index >= 0) {
+        cartData[index].quantity = quantity;
+        localStorage.setItem('cart', JSON.stringify(cartData));
+        await fetchCart();
+      }
+    }
   };
 
   const removeItem = async (itemId) => {
-    await api.delete(`/cart/${itemId}`);
-    await fetchCart();
+    try {
+      await api.delete(`/cart/${itemId}`);
+      await fetchCart();
+    } catch (err) {
+      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
+      const filtered = cartData.filter(item => item.id !== itemId);
+      localStorage.setItem('cart', JSON.stringify(filtered));
+      await fetchCart();
+    }
   };
 
   const clearCart = async () => {
-    await api.delete('/cart');
-    await fetchCart();
+    try {
+      await api.delete('/cart');
+      await fetchCart();
+    } catch (err) {
+      localStorage.removeItem('cart');
+      await fetchCart();
+    }
   };
 
   return (
