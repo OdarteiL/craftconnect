@@ -2,53 +2,98 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
 
-const CATEGORY_ICONS = {
-  'Beads & Jewelry': '💎',
-  'Wood Carvings': '🪵',
-  'Textiles & Kente': '🧵',
-  'Baskets & Weaving': '🧺',
-  'Pottery & Ceramics': '🏺',
-  'Leather Goods': '👜',
-  'Paintings & Art': '🎨',
-  'Musical Instruments': '🥁'
-};
+const HERO_SLIDES = [
+  {
+    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=1200&h=600&fit=crop',
+    title: 'Handwoven Baskets',
+    subtitle: 'Traditional basket weaving from Aburi artisans'
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=1200&h=600&fit=crop',
+    title: 'Authentic Kente Cloth',
+    subtitle: 'Vibrant textiles with rich cultural heritage'
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200&h=600&fit=crop',
+    title: 'Handcrafted Pottery',
+    subtitle: 'Traditional ceramics shaped by skilled hands'
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=1200&h=600&fit=crop',
+    title: 'Artisan Jewelry',
+    subtitle: 'Unique beadwork and handmade accessories'
+  }
+];
+
+const DUMMY_PRODUCTS = [
+  { id: 1, name: 'Handwoven Basket Set', price: 85.00, artisan: 'Akua Mensah', image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=400&fit=crop', stock: 3 },
+  { id: 2, name: 'Kente Cloth Runner', price: 120.00, artisan: 'Kwame Asante', image: 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=400&h=400&fit=crop', stock: 8 },
+  { id: 3, name: 'Clay Water Pot', price: 45.00, artisan: 'Ama Osei', image: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&h=400&fit=crop', stock: 12 },
+  { id: 4, name: 'Beaded Necklace', price: 35.00, artisan: 'Yaa Boateng', image: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400&h=400&fit=crop', stock: 4 },
+  { id: 5, name: 'Wood Carved Mask', price: 95.00, artisan: 'Kofi Mensah', image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&h=400&fit=crop', stock: 6 },
+  { id: 6, name: 'Woven Table Mat Set', price: 28.00, artisan: 'Efua Darko', image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=400&fit=crop', stock: 15 },
+  { id: 7, name: 'Traditional Drum', price: 150.00, artisan: 'Kwabena Owusu', image: 'https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=400&h=400&fit=crop', stock: 2 },
+  { id: 8, name: 'Ceramic Bowl Set', price: 55.00, artisan: 'Abena Adjei', image: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=400&h=400&fit=crop', stock: 10 }
+];
 
 export default function HomePage() {
-  const [featured, setFeatured] = useState([]);
+  const [featured, setFeatured] = useState(DUMMY_PRODUCTS);
   const [categories, setCategories] = useState([]);
   const [auctions, setAuctions] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
-    api.get('/products?limit=8').then(r => setFeatured(r.data.products || [])).catch(() => {});
+    api.get('/products?limit=8').then(r => {
+      if (r.data.products?.length > 0) setFeatured(r.data.products);
+    }).catch(() => {});
     api.get('/categories').then(r => setCategories(r.data.categories || [])).catch(() => {});
     api.get('/auctions?status=active&limit=4').then(r => setAuctions(r.data.auctions || [])).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+
   return (
     <div className="homepage">
-      {/* Hero Banner */}
-      <section className="hero-banner">
-        <div className="hero-overlay"></div>
-        <div className="container hero-container">
-          <div className="hero-text">
-            <span className="hero-badge">Authentic Ghanaian Crafts</span>
-            <h1 className="hero-title">
-              Handcrafted Treasures<br />
-              <span className="hero-highlight">From Aburi Artisans</span>
-            </h1>
-            <p className="hero-subtitle">
-              Discover unique handmade beads, wood carvings, kente textiles, and pottery. 
-              Support local artisans and own authentic African craftsmanship.
-            </p>
-            <div className="hero-buttons">
-              <Link to="/products" className="btn btn-primary btn-hero">
-                Shop Now
-              </Link>
-              <Link to="/auctions" className="btn btn-outline-light btn-hero">
-                View Auctions
-              </Link>
+      {/* Hero Carousel */}
+      <section className="hero-carousel">
+        {HERO_SLIDES.map((slide, index) => (
+          <div
+            key={index}
+            className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
+            style={{ backgroundImage: `url(${slide.image})` }}
+          >
+            <div className="hero-overlay"></div>
+            <div className="container hero-container">
+              <div className="hero-text">
+                <span className="hero-badge">Authentic Ghanaian Crafts</span>
+                <h1 className="hero-title">{slide.title}</h1>
+                <p className="hero-subtitle">{slide.subtitle}</p>
+                <div className="hero-buttons">
+                  <Link to="/products" className="btn btn-primary btn-hero">Shop Now</Link>
+                  <Link to="/auctions" className="btn btn-outline-light btn-hero">View Auctions</Link>
+                </div>
+              </div>
             </div>
           </div>
+        ))}
+        <button className="carousel-btn prev" onClick={prevSlide}>‹</button>
+        <button className="carousel-btn next" onClick={nextSlide}>›</button>
+        <div className="carousel-dots">
+          {HERO_SLIDES.map((_, index) => (
+            <button
+              key={index}
+              className={`dot ${index === currentSlide ? 'active' : ''}`}
+              onClick={() => setCurrentSlide(index)}
+            />
+          ))}
         </div>
       </section>
 

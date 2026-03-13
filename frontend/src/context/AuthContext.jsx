@@ -32,10 +32,17 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isAuthenticated, isLoading]);
 
+  const isAdmin = user?.role === 'admin';
+  const isArtisan = user?.role === 'artisan';
+  const isBuyer = user?.role === 'buyer';
+
   return (
     <AuthContext.Provider value={{
       user,
       loading: loading || isLoading,
+      isAdmin,
+      isArtisan,
+      isBuyer,
       login: () => loginWithRedirect(),
       logout: () => auth0Logout({ logoutParams: { returnTo: window.location.origin } }),
       getAccessToken: getAccessTokenSilently,

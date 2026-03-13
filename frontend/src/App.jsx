@@ -16,6 +16,7 @@ import OrdersPage from './pages/OrdersPage';
 import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
+import UserManagementPage from './pages/UserManagementPage';
 
 export default function App() {
   const { getAccessTokenSilently, isLoading } = useAuth0();
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/users" element={<UserManagementPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
       <Footer />
