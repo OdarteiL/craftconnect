@@ -124,7 +124,18 @@ export default function AuctionDetailPage() {
   const handleBid = async (e) => {
     e.preventDefault();
     if (!user) { 
-      setMessage('Please login to place a bid.'); 
+      setMessage(
+        <div>
+          Please login to place a bid.{' '}
+          <button 
+            onClick={() => window.location.href = '/login'} 
+            className="btn btn-primary btn-sm"
+            style={{ marginLeft: '8px' }}
+          >
+            Login
+          </button>
+        </div>
+      ); 
       return; 
     }
     
