@@ -131,6 +131,7 @@ export default function ProductPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     setLoading(true);
     api.get(`/products/${id}`)
       .then(r => setProduct(r.data.product))

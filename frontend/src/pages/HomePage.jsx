@@ -26,14 +26,14 @@ const HERO_SLIDES = [
 ];
 
 const DUMMY_PRODUCTS = [
-  { id: 1, name: 'Handwoven Basket Set', price: 85.00, artisan: 'Akua Mensah', image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=400&fit=crop', stock: 3 },
-  { id: 2, name: 'Kente Cloth Runner', price: 120.00, artisan: 'Kwame Asante', image: 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=400&h=400&fit=crop', stock: 8 },
-  { id: 3, name: 'Clay Water Pot', price: 45.00, artisan: 'Ama Osei', image: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&h=400&fit=crop', stock: 12 },
-  { id: 4, name: 'Beaded Necklace', price: 35.00, artisan: 'Yaa Boateng', image: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400&h=400&fit=crop', stock: 4 },
-  { id: 5, name: 'Wood Carved Mask', price: 95.00, artisan: 'Kofi Mensah', image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&h=400&fit=crop', stock: 6 },
-  { id: 6, name: 'Woven Table Mat Set', price: 28.00, artisan: 'Efua Darko', image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=400&fit=crop', stock: 15 },
-  { id: 7, name: 'Traditional Drum', price: 150.00, artisan: 'Kwabena Owusu', image: 'https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=400&h=400&fit=crop', stock: 2 },
-  { id: 8, name: 'Ceramic Bowl Set', price: 55.00, artisan: 'Abena Adjei', image: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=400&h=400&fit=crop', stock: 10 }
+  { id: 1, name: 'Handwoven Basket Set', price: 85.00, artisan: { first_name: 'Akua' }, images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=400&fit=crop'], stock: 3 },
+  { id: 2, name: 'Kente Cloth Runner', price: 120.00, artisan: { first_name: 'Kwame' }, images: ['https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=400&h=400&fit=crop'], stock: 8 },
+  { id: 3, name: 'Clay Water Pot', price: 45.00, artisan: { first_name: 'Ama' }, images: ['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&h=400&fit=crop'], stock: 12 },
+  { id: 4, name: 'Beaded Necklace', price: 35.00, artisan: { first_name: 'Yaa' }, images: ['https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400&h=400&fit=crop'], stock: 4 },
+  { id: 5, name: 'Wood Carved Mask', price: 95.00, artisan: { first_name: 'Kofi' }, images: ['https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&h=400&fit=crop'], stock: 6 },
+  { id: 6, name: 'Woven Table Mat Set', price: 28.00, artisan: { first_name: 'Efua' }, images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=400&fit=crop'], stock: 15 },
+  { id: 7, name: 'Traditional Drum', price: 150.00, artisan: { first_name: 'Kwabena' }, images: ['https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=400&h=400&fit=crop'], stock: 2 },
+  { id: 8, name: 'Ceramic Bowl Set', price: 55.00, artisan: { first_name: 'Abena' }, images: ['https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=400&h=400&fit=crop'], stock: 10 }
 ];
 
 export default function HomePage() {
