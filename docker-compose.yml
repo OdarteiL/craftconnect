@@ -6,7 +6,8 @@ services:
       context: ./database
       dockerfile: Dockerfile
     container_name: craftconnect-db
-    network_mode: host
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${DB_USER:-craftconnect}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-craftconnect_secret}
@@ -23,7 +24,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: craftconnect-cache
-    network_mode: host
+    ports:
+      - "6379:6379"
     volumes:
       - ./caching/redis.conf:/usr/local/etc/redis/redis.conf
       - redisdata:/data
@@ -40,16 +42,17 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: craftconnect-api
-    network_mode: host
+    ports:
+      - "4000:4000"
     environment:
       NODE_ENV: development
       PORT: 4000
-      DB_HOST: 127.0.0.1
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${DB_USER:-craftconnect}
       DB_PASSWORD: ${DB_PASSWORD:-craftconnect_secret}
       DB_NAME: ${DB_NAME:-craftconnect}
-      REDIS_HOST: 127.0.0.1
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh-secret}
@@ -72,7 +75,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: craftconnect-ui
-    network_mode: host
+    ports:
+      - "5173:5173"
     environment:
       VITE_API_URL: http://localhost:4000/api
     depends_on:
