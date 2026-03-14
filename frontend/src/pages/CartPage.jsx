@@ -46,7 +46,7 @@ export default function CartPage() {
           <p>{count} item{count !== 1 ? 's' : ''} in your cart</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           <div>
             {items.map(item => (
               <div key={item.id} className="cart-item">

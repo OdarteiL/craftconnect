@@ -1,114 +1,73 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
 import { useAuth } from './AuthContext';
 
 const CartContext = createContext(null);
 
+async function fetchCart() {
+  const { data } = await api.get('/cart');
+  return data; // { items, total, count }
+}
+
 export function CartProvider({ children }) {
   const { user } = useAuth();
-  const [items, setItems] = useState([]);
-  const [total, setTotal] = useState('0.00');
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchCart = useCallback(async () => {
-    if (!user) {
-      setItems([]);
-      setTotal('0.00');
-      setCount(0);
-      return;
-    }
-    try {
-      setLoading(true);
-      const { data } = await api.get('/cart');
-      setItems(data.items);
-      setTotal(data.total);
-      setCount(data.count);
-    } catch (err) {
-      // Use localStorage for demo
-      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
-      setItems(cartData);
-      const totalAmount = cartData.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-      setTotal(totalAmount.toFixed(2));
-      setCount(cartData.reduce((sum, item) => sum + item.quantity, 0));
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
-
-  const addToCart = async (product_id, quantity = 1) => {
-    try {
-      await api.post('/cart', { product_id, quantity });
-      await fetchCart();
-    } catch (err) {
-      // Demo mode - use localStorage
-      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
-      const existingIndex = cartData.findIndex(item => item.product_id === product_id);
-      
-      if (existingIndex >= 0) {
-        cartData[existingIndex].quantity += quantity;
-      } else {
-        // Get product from dummy data (you'll need to pass this)
-        cartData.push({
-          id: Date.now(),
-          product_id,
-          quantity,
-          product: { id: product_id, name: 'Product', price: 0 } // Placeholder
-        });
-      }
-      
-      localStorage.setItem('cart', JSON.stringify(cartData));
-      await fetchCart();
-    }
-  };
-
-  const updateQuantity = async (itemId, quantity) => {
-    if (quantity < 1) return removeItem(itemId);
-    try {
-      await api.put(`/cart/${itemId}`, { quantity });
-      await fetchCart();
-    } catch (err) {
-      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
-      const index = cartData.findIndex(item => item.id === itemId);
-      if (index >= 0) {
-        cartData[index].quantity = quantity;
-        localStorage.setItem('cart', JSON.stringify(cartData));
-        await fetchCart();
-      }
-    }
-  };
-
-  const removeItem = async (itemId) => {
-    try {
-      await api.delete(`/cart/${itemId}`);
-      await fetchCart();
-    } catch (err) {
-      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
-      const filtered = cartData.filter(item => item.id !== itemId);
-      localStorage.setItem('cart', JSON.stringify(filtered));
-      await fetchCart();
-    }
-  };
-
-  const clearCart = async () => {
-    try {
-      await api.delete('/cart');
-      await fetchCart();
-    } catch (err) {
-      localStorage.removeItem('cart');
-      await fetchCart();
-    }
-  };
-
-  return (
-    <CartContext.Provider value={{ items, total, count, loading, addToCart, updateQuantity, removeItem, clearCart, fetchCart }}>
-      {children}
-    </CartContext.Provider>
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['cart'] }),
+    [queryClient]
   );
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['cart'],
+    queryFn: fetchCart,
+    enabled: !!user,
+    placeholderData: { items: [], total: '0.00', count: 0 },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: ({ product_id, quantity = 1 }) => api.post('/cart', { product_id, quantity }),
+    onSuccess: invalidate,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ itemId, quantity }) =>
+      quantity < 1
+        ? api.delete(`/cart/${itemId}`)
+        : api.put(`/cart/${itemId}`, { quantity }),
+    onSuccess: invalidate,
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (itemId) => api.delete(`/cart/${itemId}`),
+    onSuccess: invalidate,
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: () => api.delete('/cart'),
+    onSuccess: invalidate,
+  });
+
+  const items = data?.items ?? [];
+  const total = useMemo(
+    () => items.reduce((sum, item) => sum + parseFloat(item.product?.price || 0) * item.quantity, 0).toFixed(2),
+    [items]
+  );
+  const count = items.length;
+
+  const value = useMemo(() => ({
+    items,
+    total,
+    count,
+    loading: isLoading,
+    addToCart: (product_id, quantity = 1) => addMutation.mutateAsync({ product_id, quantity }),
+    updateQuantity: (itemId, quantity) => updateMutation.mutateAsync({ itemId, quantity }),
+    removeItem: (itemId) => removeMutation.mutateAsync(itemId),
+    clearCart: () => clearMutation.mutateAsync(),
+  }), [items, total, count, isLoading, addMutation, updateMutation, removeMutation, clearMutation]);
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

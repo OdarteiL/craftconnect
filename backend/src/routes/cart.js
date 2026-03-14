@@ -18,8 +18,9 @@ router.get('/', authenticate, async (req, res) => {
     });
 
     const total = items.reduce((sum, item) => sum + (parseFloat(item.product.price) * item.quantity), 0);
+    const count = items.length;
 
-    res.json({ items, total: total.toFixed(2), count: items.length });
+    res.json({ items, total: total.toFixed(2), count });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch cart.' });
   }

@@ -1,7 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
-import { useEffect } from 'react';
-import api, { setTokenGetter } from './api/auth0Client';
+import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -14,19 +12,26 @@ import CheckoutPage from './pages/CheckoutPage';
 import DashboardPage from './pages/DashboardPage';
 import OrdersPage from './pages/OrdersPage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
 import UserManagementPage from './pages/UserManagementPage';
-import AdminLoginPage from './pages/AdminLoginPage';
+
+function RoleRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
+  if (user?.role === 'artisan') return <Navigate to="/dashboard" replace />;
+  return <HomePage />;
+}
 
 export default function App() {
-  const { getAccessTokenSilently, isLoading } = useAuth0();
+  const { loading } = useAuth();
 
-  useEffect(() => {
-    setTokenGetter(getAccessTokenSilently);
-  }, [getAccessTokenSilently]);
-
-  if (isLoading) {
+  if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
   }
 
@@ -35,7 +40,7 @@ export default function App() {
       <div className="kente-border" />
       <Navbar />
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<RoleRedirect />} />
         <Route path="/products" element={<CatalogPage />} />
         <Route path="/products/:id" element={<ProductPage />} />
         <Route path="/auctions" element={<AuctionsPage />} />
@@ -47,8 +52,11 @@ export default function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/users" element={<UserManagementPage />} />
-        <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
       </Routes>
       <Footer />
     </>

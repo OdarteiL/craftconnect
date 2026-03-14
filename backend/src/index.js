@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const { sequelize, testConnection } = require('./config/db');
@@ -43,6 +44,7 @@ app.use('/api/', limiter);
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Logging
 app.use(morgan('dev'));
@@ -74,6 +76,9 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err.message);
+  if (err.status === 401 || err.code === 'invalid_token' || err.code === 'unauthorized') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
   res.status(err.status || 500).json({
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });

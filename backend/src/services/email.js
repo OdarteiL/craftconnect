@@ -76,4 +76,13 @@ async function sendBidConfirmation(user, auction, bidAmount) {
   });
 }
 
-module.exports = { sendOrderConfirmation, sendBidConfirmation };
+async function sendEmail({ to, subject, html }) {
+  await transporter.sendMail({
+    from: `"CraftConnect" <${process.env.SMTP_USER}>`,
+    to,
+    subject,
+    html,
+  });
+}
+
+module.exports = { sendOrderConfirmation, sendBidConfirmation, sendEmail };

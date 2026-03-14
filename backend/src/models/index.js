@@ -13,11 +13,6 @@ const User = sequelize.define('User', {
     unique: true,
     validate: { isEmail: true }
   },
-  auth0_id: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    unique: true
-  },
   password_hash: {
     type: DataTypes.STRING(255),
     allowNull: true
@@ -45,7 +40,22 @@ const User = sequelize.define('User', {
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
-  }
+  },
+  email_verification_token: DataTypes.STRING(255),
+  email_verification_expires: DataTypes.DATE,
+  password_reset_token: DataTypes.STRING(255),
+  password_reset_expires: DataTypes.DATE,
+  refresh_tokens: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  login_attempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  lock_until: DataTypes.DATE,
+  last_login_at: DataTypes.DATE,
+  last_login_ip: DataTypes.STRING(45)
 }, {
   tableName: 'users',
   timestamps: true,

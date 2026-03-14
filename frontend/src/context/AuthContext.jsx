@@ -1,68 +1,67 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
-import api, { setTokenGetter } from '../api/auth0Client';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api, { setAccessToken } from '../api/client';
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const { user: auth0User, isAuthenticated, isLoading, loginWithRedirect, logout: auth0Logout, getAccessTokenSilently } = useAuth0();
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Try to restore session via refresh token cookie on mount
   useEffect(() => {
-    setTokenGetter(getAccessTokenSilently);
-  }, [getAccessTokenSilently]);
+    api.post('/auth/refresh')
+      .then(({ data }) => {
+        setAccessToken(data.accessToken);
+        return api.get('/auth/me');
+      })
+      .then(({ data }) => setUser(data.user))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const fetchUser = async () => {
-    if (!isAuthenticated) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await api.get('/auth/me');
-      setUser(res.data.user);
-    } catch (err) {
-      console.error('Failed to fetch user:', err);
-      // Fall back to Auth0 user data so isAuthenticated still works
-      setUser({ auth0_id: auth0User?.sub, email: auth0User?.email, first_name: auth0User?.given_name || auth0User?.name, role: 'buyer' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Listen for forced logout (e.g. refresh token expired)
   useEffect(() => {
-    if (!isLoading) {
-      fetchUser();
-    }
-  }, [isAuthenticated, isLoading]);
+    const handler = () => { setUser(null); setAccessToken(null); };
+    window.addEventListener('auth:logout', handler);
+    return () => window.removeEventListener('auth:logout', handler);
+  }, []);
 
-  const isAdmin = user?.role === 'admin';
-  const isArtisan = user?.role === 'artisan';
-  const isBuyer = user?.role === 'buyer';
+  const login = useCallback(async (email, password) => {
+    const { data } = await api.post('/auth/login', { email, password });
+    setAccessToken(data.accessToken);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const logout = useCallback(async () => {
+    await api.post('/auth/logout').catch(() => {});
+    setAccessToken(null);
+    setUser(null);
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    const { data } = await api.get('/auth/me');
+    setUser(data.user);
+  }, []);
 
   return (
     <AuthContext.Provider value={{
       user,
-      loading: loading || isLoading,
-      isAdmin,
-      isArtisan,
-      isBuyer,
-      login: () => loginWithRedirect(),
-      logout: () => auth0Logout({ logoutParams: { returnTo: window.location.origin } }),
-      getAccessToken: getAccessTokenSilently,
-      refreshUser: fetchUser
+      loading,
+      isAdmin: user?.role === 'admin',
+      isArtisan: user?.role === 'artisan',
+      isBuyer: user?.role === 'buyer',
+      login,
+      logout,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}

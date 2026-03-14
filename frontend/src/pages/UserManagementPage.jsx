@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/auth0Client';
+import api from '../api/client';
 import './UserManagementPage.css';
 
 export default function UserManagementPage() {
