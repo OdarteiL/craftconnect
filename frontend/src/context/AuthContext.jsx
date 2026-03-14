@@ -25,6 +25,8 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user);
     } catch (err) {
       console.error('Failed to fetch user:', err);
+      // Fall back to Auth0 user data so isAuthenticated still works
+      setUser({ auth0_id: auth0User?.sub, email: auth0User?.email, first_name: auth0User?.given_name || auth0User?.name, role: 'buyer' });
     } finally {
       setLoading(false);
     }
