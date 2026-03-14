@@ -18,7 +18,8 @@ const authProps = USE_MOCK_AUTH ? {} : {
   authorizationParams: {
     redirect_uri: window.location.origin,
     audience: import.meta.env.VITE_AUTH0_AUDIENCE
-  }
+  },
+  cacheLocation: 'localstorage'
 };
 
 createRoot(document.getElementById('root')).render(
