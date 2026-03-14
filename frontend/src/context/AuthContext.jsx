@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import api from '../api/auth0Client';
+import api, { setTokenGetter } from '../api/auth0Client';
 
 const AuthContext = createContext();
 
@@ -8,6 +8,10 @@ export const AuthProvider = ({ children }) => {
   const { user: auth0User, isAuthenticated, isLoading, loginWithRedirect, logout: auth0Logout, getAccessTokenSilently } = useAuth0();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setTokenGetter(getAccessTokenSilently);
+  }, [getAccessTokenSilently]);
 
   const fetchUser = async () => {
     if (!isAuthenticated) {
