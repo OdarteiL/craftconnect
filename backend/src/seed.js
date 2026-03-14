@@ -74,7 +74,7 @@ async function seed() {
         name: prod.name,
         description: prod.description,
         price: prod.price,
-        stock_quantity: prod.stock,
+        stock: prod.stock,
         category_id: category.id,
         artisan_id: artisan.id,
         images: [`https://placehold.co/600x600/2E7D32/FFF?text=${encodeURIComponent(prod.name.substring(0, 20))}`],
