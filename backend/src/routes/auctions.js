@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const { Auction, Bid, Product, User, Notification } = require('../models');
 const { authenticate, requireRole, optionalAuth } = require('../middleware/auth');
 const { getCache, setCache, invalidateCache } = require('../services/cache');
+const { sendBidConfirmation } = require('../services/email');
 
 const router = express.Router();
 
@@ -165,6 +166,12 @@ router.post('/:id/bid', authenticate, async (req, res) => {
       message: `A new bid of GHS ${bidAmount.toFixed(2)} was placed on your auction.`,
       link: `/auctions/${auction.id}`
     });
+
+    // Email bidder confirmation
+    const auctionWithProduct = await Auction.findByPk(auction.id, {
+      include: [{ model: Product, as: 'product', attributes: ['name'] }]
+    });
+    sendBidConfirmation(req.user, auctionWithProduct, bidAmount).catch(err => console.error('Email error:', err));
 
     await invalidateCache('auctions:*');
     res.status(201).json({ message: 'Bid placed successfully', bid, current_price: bidAmount });

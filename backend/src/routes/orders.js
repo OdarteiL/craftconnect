@@ -2,6 +2,7 @@ const express = require('express');
 const { sequelize } = require('../config/db');
 const { Order, OrderItem, CartItem, Product, User, Notification } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const { sendOrderConfirmation } = require('../services/email');
 
 const router = express.Router();
 
@@ -74,6 +75,12 @@ router.post('/', authenticate, async (req, res) => {
       message: `Your order #${order.id.slice(0,8)} has been placed successfully.`,
       link: `/orders/${order.id}`
     });
+
+    // Email receipt
+    const fullOrder = await Order.findByPk(order.id, {
+      include: [{ model: OrderItem, as: 'items', include: [{ model: Product, as: 'product' }] }]
+    });
+    sendOrderConfirmation(req.user, fullOrder, fullOrder.items).catch(err => console.error('Email error:', err));
 
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (err) {
