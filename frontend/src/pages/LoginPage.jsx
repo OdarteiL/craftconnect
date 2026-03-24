@@ -32,7 +32,7 @@ export default function LoginPage() {
   if (user) {
     if (user.role === 'admin') navigate('/admin', { replace: true });
     else if (user.role === 'artisan') navigate('/dashboard', { replace: true });
-    else navigate('/', { replace: true });
+    else navigate('/products', { replace: true });
     return null;
   }
 
@@ -45,7 +45,7 @@ export default function LoginPage() {
       const u = await login(form.email, form.password);
       if (u.role === 'admin') navigate('/admin');
       else if (u.role === 'artisan') navigate('/dashboard');
-      else navigate('/');
+      else navigate('/products');
     } catch (err) {
       const msg = err.response?.data?.error || 'Login failed.';
       if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {

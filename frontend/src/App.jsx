@@ -25,6 +25,7 @@ function RoleRedirect() {
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
   if (user?.role === 'admin') return <Navigate to="/admin" replace />;
   if (user?.role === 'artisan') return <Navigate to="/dashboard" replace />;
+  if (user?.role === 'buyer') return <Navigate to="/products" replace />;
   return <HomePage />;
 }
 
