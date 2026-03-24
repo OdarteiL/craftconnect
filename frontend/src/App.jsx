@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -30,9 +30,19 @@ function RoleRedirect() {
 
 export default function App() {
   const { loading } = useAuth();
+  const location = useLocation();
+  const isDashboard = location.pathname.startsWith('/dashboard');
 
   if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
+  }
+
+  if (isDashboard) {
+    return (
+      <Routes>
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Routes>
+    );
   }
 
   return (

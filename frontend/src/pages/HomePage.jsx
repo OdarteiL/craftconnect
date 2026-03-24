@@ -37,13 +37,13 @@ const DUMMY_PRODUCTS = [
 ];
 
 export default function HomePage() {
-  const [featured, setFeatured] = useState(DUMMY_PRODUCTS);
+  const [featured, setFeatured] = useState([]);
   const [categories, setCategories] = useState([]);
   const [auctions, setAuctions] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
-    api.get('/products?limit=8').then(r => {
+    api.get('/products?limit=8&sort=newest').then(r => {
       if (r.data.products?.length > 0) setFeatured(r.data.products);
     }).catch(() => {});
     api.get('/categories').then(r => setCategories(r.data.categories || [])).catch(() => {});
@@ -119,7 +119,14 @@ export default function HomePage() {
             <Link to="/products" className="link-more">See all</Link>
           </div>
           <div className="products-grid">
-            {featured.slice(0, 8).map(product => (
+            {featured.length === 0 ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🏺</div>
+                <p>No products yet. Check back soon!</p>
+              </div>
+            ) : featured.slice(0, 8).map(product => {
+              const isNew = product.created_at && (Date.now() - new Date(product.created_at)) < 7 * 24 * 60 * 60 * 1000;
+              return (
               <Link to={`/products/${product.id}`} key={product.id} className="product-card">
                 <div className="product-image">
                   <img
@@ -127,6 +134,7 @@ export default function HomePage() {
                     alt={product.name}
                     loading="lazy"
                   />
+                  {isNew && <span className="badge-new">New</span>}
                 </div>
                 <div className="product-info">
                   <h3 className="product-name">{product.name}</h3>
@@ -139,7 +147,8 @@ export default function HomePage() {
                   </div>
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

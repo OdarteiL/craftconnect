@@ -2,199 +2,337 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import ImageUploader from '../components/ImageUploader';
+import './DashboardPage.css';
 
-const DUMMY_SELLER_PRODUCTS = [
-  { id: 1, name: 'Handwoven Basket Set', price: 85.00, stock: 3, views: 234, status: 'active', category: { name: 'Baskets & Weaving' } },
-  { id: 2, name: 'Kente Cloth Runner', price: 120.00, stock: 8, views: 456, status: 'active', category: { name: 'Textiles & Kente' } }
+const NAV = [
+  { key: 'overview',  icon: '▣',  label: 'Overview' },
+  { key: 'products',  icon: '⊞',  label: 'Products' },
+  { key: 'orders',    icon: '≡',  label: 'Orders' },
+  { key: 'auctions',  icon: '◈',  label: 'Auctions' },
 ];
 
+const EMPTY_FORM = { name: '', description: '', story: '', price: '', stock: '', category_id: '', materials: '', images: [] };
+
 export default function DashboardPage() {
-  const { user, isArtisan, isAdmin } = useAuth();
+  const { user, isArtisan, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
-  const [products, setProducts] = useState(DUMMY_SELLER_PRODUCTS);
-  const [loading, setLoading] = useState(false);
+  const [section, setSection] = useState('overview');
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [auctions, setAuctions] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', story: '', price: '', stock: '', category_id: '', materials: '' });
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'Baskets & Weaving' },
-    { id: 2, name: 'Textiles & Kente' },
-    { id: 3, name: 'Pottery & Ceramics' },
-    { id: 4, name: 'Beads & Jewelry' }
-  ]);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || (!isArtisan && !isAdmin)) { 
-      navigate('/'); 
-      return; 
-    }
-    
-    api.get('/products?limit=100').then(r => {
-      const mine = (r.data.products || []).filter(p => p.artisan_id === user.id);
-      if (mine.length > 0) setProducts(mine);
-    }).catch(() => {});
-    
-    api.get('/categories').then(r => {
-      if (r.data.categories?.length > 0) setCategories(r.data.categories);
-    }).catch(() => {});
-  }, [user, isArtisan, isAdmin]);
+    if (!user || (!isArtisan && !isAdmin)) { navigate('/'); return; }
+    Promise.all([
+      api.get('/products?limit=100'),
+      api.get('/orders').catch(() => ({ data: { orders: [] } })),
+      api.get('/auctions?limit=100').catch(() => ({ data: { auctions: [] } })),
+      api.get('/categories').catch(() => ({ data: { categories: [] } })),
+    ]).then(([pr, or, au, ca]) => {
+      setProducts((pr.data.products || []).filter(p => p.artisan_id === user.id));
+      setOrders(or.data.orders || []);
+      setAuctions((au.data.auctions || []).filter(a => a.artisan_id === user.id));
+      setCategories(ca.data.categories || []);
+    }).finally(() => setLoading(false));
+  }, [user]);
 
-  const handleSubmit = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        price: parseFloat(form.price),
-        stock: parseInt(form.stock) || 0,
-        materials: form.materials ? form.materials.split(',').map(m => m.trim()) : []
-      };
+      const payload = { ...form, price: parseFloat(form.price), stock: parseInt(form.stock) || 0, materials: form.materials ? form.materials.split(',').map(m => m.trim()) : [] };
       await api.post('/products', payload);
-      setShowForm(false);
-      setForm({ name: '', description: '', story: '', price: '', stock: '', category_id: '', materials: '' });
       const r = await api.get('/products?limit=100');
       setProducts((r.data.products || []).filter(p => p.artisan_id === user.id));
-    } catch (err) {
-      // Demo mode
-      const newProduct = {
-        id: Date.now(),
-        ...payload,
-        views: 0,
-        status: 'active',
-        category: categories.find(c => c.id === payload.category_id)
-      };
-      setProducts([...products, newProduct]);
       setShowForm(false);
-      setForm({ name: '', description: '', story: '', price: '', stock: '', category_id: '', materials: '' });
-    }
+      setForm(EMPTY_FORM);
+    } catch {}
     setSaving(false);
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this product?')) return;
-    try {
-      await api.delete(`/products/${id}`);
-      setProducts(products.filter(p => p.id !== id));
-    } catch (err) {
-      setProducts(products.filter(p => p.id !== id));
-    }
+    try { await api.delete(`/products/${id}`); } catch {}
+    setProducts(p => p.filter(x => x.id !== id));
   };
+
+  const revenue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + parseFloat(o.total_amount || 0), 0);
 
   if (!user || (!isArtisan && !isAdmin)) return null;
 
   return (
-    <div className="page">
-      <div className="container">
-        <div className="page-header">
-          <h1>🎨 Artisan Dashboard</h1>
-          <p>Manage your products and track your sales</p>
+    <div className="db-shell">
+      {/* Sidebar */}
+      <aside className="db-sidebar">
+        <div className="db-brand">
+          <span className="db-brand-icon">✦</span>
+          <span className="db-brand-name">CraftConnect</span>
         </div>
-
-        <div className="dashboard-grid">
-          <div className="stat-card">
-            <div className="stat-icon">📦</div>
-            <div className="stat-value">{products.length}</div>
-            <div className="stat-label">Products Listed</div>
+        <nav className="db-nav">
+          {NAV.map(n => (
+            <button key={n.key} className={`db-nav-item ${section === n.key ? 'active' : ''}`} onClick={() => setSection(n.key)}>
+              <span className="db-nav-icon">{n.icon}</span>
+              <span>{n.label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="db-sidebar-footer">
+          <div className="db-user-row">
+            <div className="db-avatar">{user.first_name?.[0]}{user.last_name?.[0]}</div>
+            <div className="db-user-info">
+              <span className="db-user-name">{user.first_name} {user.last_name}</span>
+              <span className="db-user-role">{user.role}</span>
+            </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-icon">✅</div>
-            <div className="stat-value">{products.filter(p => p.status === 'active').length}</div>
-            <div className="stat-label">Active Products</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">👁</div>
-            <div className="stat-value">{products.reduce((s, p) => s + (p.views || 0), 0)}</div>
-            <div className="stat-label">Total Views</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">💰</div>
-            <div className="stat-value">GHS {products.reduce((s, p) => s + (p.price * p.stock), 0).toFixed(0)}</div>
-            <div className="stat-label">Inventory Value</div>
-          </div>
+          <button className="db-logout" onClick={async () => { await logout(); navigate('/login'); }}>Sign out</button>
         </div>
+      </aside>
 
-        <div className="flex-between mb-3">
-          <h2>Your Products</h2>
-          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Cancel' : '+ Add Product'}
-          </button>
-        </div>
-
-        {showForm && (
-          <form onSubmit={handleSubmit} style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', marginBottom: '32px' }}>
-            <h3 style={{ marginBottom: '20px' }}>New Product</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="form-group">
-                <label>Product Name *</label>
-                <input className="form-control" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} required />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <select className="form-control" value={form.category_id} onChange={(e) => setForm(f => ({ ...f, category_id: e.target.value }))}>
-                  <option value="">Select category</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Price (GHS) *</label>
-                <input type="number" className="form-control" value={form.price} onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))} required min="0" step="0.01" />
-              </div>
-              <div className="form-group">
-                <label>Stock Quantity</label>
-                <input type="number" className="form-control" value={form.stock} onChange={(e) => setForm(f => ({ ...f, stock: e.target.value }))} min="0" />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea className="form-control" value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe your product..." rows="3" />
-            </div>
-            <div className="form-group">
-              <label>Cultural Story</label>
-              <textarea className="form-control" value={form.story} onChange={(e) => setForm(f => ({ ...f, story: e.target.value }))} placeholder="Tell the story behind this craft..." rows="3" />
-            </div>
-            <div className="form-group">
-              <label>Materials (comma separated)</label>
-              <input className="form-control" value={form.materials} onChange={(e) => setForm(f => ({ ...f, materials: e.target.value }))} placeholder="Wood, Glass beads, Gold leaf" />
-            </div>
-            <button className="btn btn-primary" disabled={saving}>{saving ? 'Creating...' : 'Create Product'}</button>
-          </form>
-        )}
-
+      {/* Main */}
+      <main className="db-main">
         {loading ? (
-          <div className="loading"><div className="spinner" /></div>
-        ) : products.length === 0 ? (
-          <div className="empty-state">
-            <div className="icon">🎨</div>
-            <h3>No products yet</h3>
-            <p>Click "Add Product" to list your first craft.</p>
-          </div>
+          <div className="db-loading"><div className="db-spinner" /></div>
         ) : (
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Views</th><th>Status</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                {products.map(p => (
-                  <tr key={p.id}>
-                    <td>
-                      <Link to={`/products/${p.id}`} style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{p.name}</Link>
-                    </td>
-                    <td style={{ color: 'var(--text-muted)' }}>{p.category?.name || '—'}</td>
-                    <td style={{ color: 'var(--gold)', fontWeight: 600 }}>GHS {parseFloat(p.price).toFixed(2)}</td>
-                    <td>{p.stock}</td>
-                    <td>{p.views || 0}</td>
-                    <td><span className={`status-badge ${p.status}`}>{p.status}</span></td>
-                    <td>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(p.id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* ── Overview ── */}
+            {section === 'overview' && (
+              <div className="db-section">
+                <div className="db-page-header">
+                  <h1 className="db-page-title">Overview</h1>
+                  <span className="db-page-sub">Welcome back, {user.first_name}</span>
+                </div>
+                <div className="db-stats">
+                  {[
+                    { label: 'Products', value: products.length, sub: `${products.filter(p => p.status === 'active').length} active` },
+                    { label: 'Orders', value: orders.length, sub: `${orders.filter(o => o.status === 'pending').length} pending` },
+                    { label: 'Revenue', value: `GHS ${revenue.toFixed(2)}`, sub: 'all time' },
+                    { label: 'Auctions', value: auctions.length, sub: `${auctions.filter(a => a.status === 'active').length} live` },
+                  ].map(s => (
+                    <div key={s.label} className="db-stat-card">
+                      <span className="db-stat-label">{s.label}</span>
+                      <span className="db-stat-value">{s.value}</span>
+                      <span className="db-stat-sub">{s.sub}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="db-overview-grid">
+                  <div className="db-panel">
+                    <div className="db-panel-header">
+                      <span className="db-panel-title">Recent Products</span>
+                      <button className="db-link" onClick={() => setSection('products')}>View all →</button>
+                    </div>
+                    <table className="db-table">
+                      <thead><tr><th>Name</th><th>Price</th><th>Stock</th><th>Status</th></tr></thead>
+                      <tbody>
+                        {products.slice(0, 5).map(p => (
+                          <tr key={p.id}>
+                            <td className="db-td-primary">{p.name}</td>
+                            <td>GHS {parseFloat(p.price).toFixed(2)}</td>
+                            <td>{p.stock}</td>
+                            <td><span className={`db-badge db-badge-${p.status}`}>{p.status}</span></td>
+                          </tr>
+                        ))}
+                        {products.length === 0 && <tr><td colSpan={4} className="db-empty-row">No products yet</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="db-panel">
+                    <div className="db-panel-header">
+                      <span className="db-panel-title">Recent Orders</span>
+                      <button className="db-link" onClick={() => setSection('orders')}>View all →</button>
+                    </div>
+                    <table className="db-table">
+                      <thead><tr><th>ID</th><th>Amount</th><th>Status</th></tr></thead>
+                      <tbody>
+                        {orders.slice(0, 5).map(o => (
+                          <tr key={o.id}>
+                            <td className="db-td-mono">#{o.id.slice(0, 8).toUpperCase()}</td>
+                            <td>GHS {parseFloat(o.total_amount).toFixed(2)}</td>
+                            <td><span className={`db-badge db-badge-${o.status}`}>{o.status}</span></td>
+                          </tr>
+                        ))}
+                        {orders.length === 0 && <tr><td colSpan={3} className="db-empty-row">No orders yet</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Products ── */}
+            {section === 'products' && (
+              <div className="db-section">
+                <div className="db-page-header">
+                  <div>
+                    <h1 className="db-page-title">Products</h1>
+                    <span className="db-page-sub">{products.length} items</span>
+                  </div>
+                  <button className="db-btn-primary" onClick={() => setShowForm(f => !f)}>
+                    {showForm ? 'Cancel' : '+ New Product'}
+                  </button>
+                </div>
+
+                {showForm && (
+                  <div className="db-panel db-form-panel">
+                    <div className="db-panel-header"><span className="db-panel-title">New Product</span></div>
+                    <form onSubmit={handleSave} className="db-form">
+                      <div className="db-form-grid">
+                        <div className="db-field">
+                          <label>Name *</label>
+                          <input className="db-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+                        </div>
+                        <div className="db-field">
+                          <label>Category</label>
+                          <select className="db-input" value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}>
+                            <option value="">Select…</option>
+                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        </div>
+                        <div className="db-field">
+                          <label>Price (GHS) *</label>
+                          <input type="number" className="db-input" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required min="0" step="0.01" />
+                        </div>
+                        <div className="db-field">
+                          <label>Stock</label>
+                          <input type="number" className="db-input" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} min="0" />
+                        </div>
+                      </div>
+                      <div className="db-field">
+                        <label>Description</label>
+                        <textarea className="db-input db-textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+                      </div>
+                      <div className="db-field">
+                        <label>Cultural Story</label>
+                        <textarea className="db-input db-textarea" value={form.story} onChange={e => setForm(f => ({ ...f, story: e.target.value }))} rows={3} />
+                      </div>
+                      <div className="db-field">
+                        <label>Materials <span className="db-field-hint">(comma separated)</span></label>
+                        <input className="db-input" value={form.materials} onChange={e => setForm(f => ({ ...f, materials: e.target.value }))} placeholder="Wood, Glass beads, Gold leaf" />
+                      </div>
+                      <div className="db-field">
+                        <label>Images</label>
+                        <ImageUploader images={form.images} onChange={imgs => setForm(f => ({ ...f, images: imgs }))} />
+                      </div>
+                      <div className="db-form-actions">
+                        <button type="button" className="db-btn-ghost" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}>Cancel</button>
+                        <button type="submit" className="db-btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Create Product'}</button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                <div className="db-panel">
+                  <table className="db-table">
+                    <thead>
+                      <tr><th></th><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Views</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                      {products.map(p => (
+                        <tr key={p.id}>
+                          <td style={{ width: 44, padding: '8px 8px 8px 20px' }}>
+                            {p.images?.[0]
+                              ? <img src={p.images[0]} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
+                              : <div style={{ width: 36, height: 36, borderRadius: 6, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🏺</div>
+                            }
+                          </td>
+                          <td><Link to={`/products/${p.id}`} className="db-td-primary db-td-link">{p.name}</Link></td>
+                          <td className="db-td-muted">{p.category?.name || '—'}</td>
+                          <td>GHS {parseFloat(p.price).toFixed(2)}</td>
+                          <td>{p.stock}</td>
+                          <td className="db-td-muted">{p.views || 0}</td>
+                          <td><span className={`db-badge db-badge-${p.status}`}>{p.status}</span></td>
+                          <td>
+                            <button className="db-btn-danger-sm" onClick={() => handleDelete(p.id)}>Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                      {products.length === 0 && (
+                        <tr><td colSpan={7} className="db-empty-row">No products yet. Click "+ New Product" to add one.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ── Orders ── */}
+            {section === 'orders' && (
+              <div className="db-section">
+                <div className="db-page-header">
+                  <div>
+                    <h1 className="db-page-title">Orders</h1>
+                    <span className="db-page-sub">{orders.length} total</span>
+                  </div>
+                </div>
+                <div className="db-panel">
+                  <table className="db-table">
+                    <thead>
+                      <tr><th>Order ID</th><th>Date</th><th>Amount</th><th>Payment</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                      {orders.map(o => (
+                        <tr key={o.id}>
+                          <td className="db-td-mono">#{o.id.slice(0, 8).toUpperCase()}</td>
+                          <td className="db-td-muted">{new Date(o.created_at).toLocaleDateString()}</td>
+                          <td>GHS {parseFloat(o.total_amount).toFixed(2)}</td>
+                          <td className="db-td-muted">{o.payment_method || '—'}</td>
+                          <td><span className={`db-badge db-badge-${o.status}`}>{o.status}</span></td>
+                        </tr>
+                      ))}
+                      {orders.length === 0 && (
+                        <tr><td colSpan={5} className="db-empty-row">No orders yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ── Auctions ── */}
+            {section === 'auctions' && (
+              <div className="db-section">
+                <div className="db-page-header">
+                  <div>
+                    <h1 className="db-page-title">Auctions</h1>
+                    <span className="db-page-sub">{auctions.length} total</span>
+                  </div>
+                  <Link to="/auctions" className="db-btn-primary">Browse Auctions →</Link>
+                </div>
+                <div className="db-panel">
+                  <table className="db-table">
+                    <thead>
+                      <tr><th>Product</th><th>Starting Price</th><th>Current Price</th><th>Bids</th><th>Ends</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                      {auctions.map(a => (
+                        <tr key={a.id}>
+                          <td className="db-td-primary">{a.product?.name || '—'}</td>
+                          <td>GHS {parseFloat(a.starting_price).toFixed(2)}</td>
+                          <td>GHS {parseFloat(a.current_price || a.starting_price).toFixed(2)}</td>
+                          <td>{a.bid_count || 0}</td>
+                          <td className="db-td-muted">{new Date(a.end_time).toLocaleDateString()}</td>
+                          <td><span className={`db-badge db-badge-${a.status}`}>{a.status}</span></td>
+                        </tr>
+                      ))}
+                      {auctions.length === 0 && (
+                        <tr><td colSpan={6} className="db-empty-row">No auctions yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
-      </div>
+      </main>
     </div>
   );
 }

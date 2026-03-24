@@ -4,109 +4,6 @@ import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
-const DUMMY_PRODUCTS = {
-  1: { 
-    id: 1, name: 'Handwoven Basket Set', price: 85.00, stock: 3,
-    artisan: { first_name: 'Akua', last_name: 'Mensah', location: 'Aburi' }, 
-    images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800'], 
-    category: { name: 'Baskets & Weaving' }, 
-    views: 234,
-    description: 'Beautiful handwoven basket set crafted from natural raffia palm. Each basket is meticulously woven by skilled artisans using traditional techniques passed down through generations. Perfect for storage, decoration, or as a unique gift.',
-    story: 'These baskets are woven by Akua Mensah, a master weaver from Aburi who learned the craft from her grandmother. Each piece takes 3-4 days to complete and represents over 30 years of weaving expertise.',
-    materials: ['Raffia Palm', 'Natural Dyes', 'Cotton Thread'],
-    reviews: [
-      { id: 1, rating: 5, comment: 'Absolutely beautiful craftsmanship! The quality is outstanding.', buyer: { first_name: 'John', last_name: 'Doe' }, created_at: '2026-03-10' },
-      { id: 2, rating: 4, comment: 'Love these baskets. Great for organizing my home.', buyer: { first_name: 'Jane', last_name: 'Smith' }, created_at: '2026-03-08' }
-    ]
-  },
-  2: { 
-    id: 2, name: 'Kente Cloth Runner', price: 120.00, stock: 8,
-    artisan: { first_name: 'Kwame', last_name: 'Asante', location: 'Aburi' }, 
-    images: ['https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=800'], 
-    category: { name: 'Textiles & Kente' }, 
-    views: 456,
-    description: 'Authentic Kente cloth table runner featuring vibrant traditional patterns. Hand-woven on traditional looms using premium cotton threads. Each pattern tells a story and carries cultural significance.',
-    story: 'Kwame Asante is a third-generation Kente weaver. This particular pattern, called "Fathia Fata Nkrumah," symbolizes beauty, excellence, and genuineness. It was originally created to honor Ghana\'s first lady.',
-    materials: ['Cotton Thread', 'Silk Blend', 'Traditional Dyes'],
-    reviews: [
-      { id: 3, rating: 5, comment: 'The colors are even more vibrant in person! A true work of art.', buyer: { first_name: 'Sarah', last_name: 'Johnson' }, created_at: '2026-03-12' }
-    ]
-  },
-  3: { 
-    id: 3, name: 'Clay Water Pot', price: 45.00, stock: 12,
-    artisan: { first_name: 'Ama', last_name: 'Osei', location: 'Aburi' }, 
-    images: ['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800'], 
-    category: { name: 'Pottery & Ceramics' }, 
-    views: 189,
-    description: 'Traditional clay water pot handcrafted using ancient pottery techniques. Naturally porous clay keeps water cool and fresh. Perfect for both functional use and decorative display.',
-    story: 'Ama Osei shapes each pot by hand without using a pottery wheel, following methods used by her ancestors for centuries. The clay is sourced from local riverbeds and fired in traditional kilns.',
-    materials: ['Natural Clay', 'River Sand', 'Wood Ash Glaze'],
-    reviews: []
-  },
-  4: { 
-    id: 4, name: 'Beaded Necklace', price: 35.00, stock: 4,
-    artisan: { first_name: 'Yaa', last_name: 'Boateng', location: 'Aburi' }, 
-    images: ['https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=800'], 
-    category: { name: 'Beads & Jewelry' }, 
-    views: 312,
-    description: 'Stunning handcrafted beaded necklace featuring traditional Ghanaian glass beads. Each bead is individually made and strung with care. A statement piece that celebrates African heritage.',
-    story: 'Yaa creates her beads using recycled glass, melting and shaping each one by hand. The patterns and colors are inspired by traditional Krobo bead designs that date back hundreds of years.',
-    materials: ['Recycled Glass Beads', 'Cotton Cord', 'Brass Clasp'],
-    reviews: [
-      { id: 4, rating: 5, comment: 'Gorgeous! I get compliments every time I wear it.', buyer: { first_name: 'Emily', last_name: 'Brown' }, created_at: '2026-03-11' },
-      { id: 5, rating: 5, comment: 'The craftsmanship is incredible. Worth every penny.', buyer: { first_name: 'Michael', last_name: 'Lee' }, created_at: '2026-03-09' }
-    ]
-  },
-  5: { 
-    id: 5, name: 'Wood Carved Mask', price: 95.00, stock: 6,
-    artisan: { first_name: 'Kofi', last_name: 'Mensah', location: 'Aburi' }, 
-    images: ['https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=800'], 
-    category: { name: 'Wood Carvings' }, 
-    views: 278,
-    description: 'Intricately carved wooden mask representing traditional Ghanaian symbolism. Hand-carved from a single piece of mahogany wood. A stunning piece of African art.',
-    story: 'Kofi learned wood carving from his father and has been perfecting his craft for over 25 years. Each mask takes approximately one week to carve and finish.',
-    materials: ['Mahogany Wood', 'Natural Stain', 'Beeswax Polish'],
-    reviews: []
-  },
-  6: { 
-    id: 6, name: 'Woven Table Mat Set', price: 28.00, stock: 15,
-    artisan: { first_name: 'Efua', last_name: 'Darko', location: 'Aburi' }, 
-    images: ['https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800'], 
-    category: { name: 'Baskets & Weaving' }, 
-    views: 156,
-    description: 'Set of 4 handwoven table mats perfect for dining. Made from durable natural fibers with beautiful geometric patterns. Easy to clean and maintain.',
-    story: 'Efua specializes in functional woven items that bring traditional craftsmanship into everyday life. These mats are both practical and beautiful.',
-    materials: ['Raffia', 'Natural Fiber', 'Organic Dyes'],
-    reviews: [
-      { id: 6, rating: 4, comment: 'Great quality and perfect size for my table.', buyer: { first_name: 'David', last_name: 'Wilson' }, created_at: '2026-03-07' }
-    ]
-  },
-  7: { 
-    id: 7, name: 'Traditional Drum', price: 150.00, stock: 2,
-    artisan: { first_name: 'Kwabena', last_name: 'Owusu', location: 'Aburi' }, 
-    images: ['https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=800'], 
-    category: { name: 'Musical Instruments' }, 
-    views: 423,
-    description: 'Authentic African djembe drum handcrafted using traditional methods. Features hand-carved shell and goat skin head. Produces rich, resonant tones.',
-    story: 'Kwabena comes from a long line of drum makers. Each drum is blessed in a traditional ceremony before being sold, ensuring it carries good energy.',
-    materials: ['Hardwood', 'Goat Skin', 'Natural Rope'],
-    reviews: [
-      { id: 7, rating: 5, comment: 'Amazing sound quality! Worth every cedi.', buyer: { first_name: 'Lisa', last_name: 'Anderson' }, created_at: '2026-03-06' }
-    ]
-  },
-  8: { 
-    id: 8, name: 'Ceramic Bowl Set', price: 55.00, stock: 10,
-    artisan: { first_name: 'Abena', last_name: 'Adjei', location: 'Aburi' }, 
-    images: ['https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=800'], 
-    category: { name: 'Pottery & Ceramics' }, 
-    views: 201,
-    description: 'Set of 3 handcrafted ceramic bowls with traditional patterns. Perfect for serving or display. Each bowl is unique with slight variations.',
-    story: 'Abena creates functional pottery that honors traditional designs while being suitable for modern homes. Each piece is food-safe and dishwasher friendly.',
-    materials: ['Stoneware Clay', 'Food-Safe Glaze', 'Natural Pigments'],
-    reviews: []
-  }
-};
-
 function Stars({ rating }) {
   return (
     <div className="stars">
@@ -135,11 +32,7 @@ export default function ProductPage() {
     setLoading(true);
     api.get(`/products/${id}`)
       .then(r => setProduct(r.data.product))
-      .catch(() => {
-        // Use dummy data
-        const dummy = DUMMY_PRODUCTS[id];
-        if (dummy) setProduct(dummy);
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -154,29 +47,7 @@ export default function ProductPage() {
       setMessage('✓ Added to cart!');
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      // Demo mode - add to localStorage with full product data
-      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
-      const existingIndex = cartData.findIndex(item => item.product_id === product.id);
-      
-      if (existingIndex >= 0) {
-        cartData[existingIndex].quantity += quantity;
-      } else {
-        cartData.push({
-          id: Date.now(),
-          product_id: product.id,
-          quantity,
-          product: {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            images: product.images,
-            artisan: product.artisan
-          }
-        });
-      }
-      
-      localStorage.setItem('cart', JSON.stringify(cartData));
-      setMessage('✓ Added to cart!');
+      setMessage(err.response?.data?.error || 'Failed to add to cart.');
       setTimeout(() => setMessage(''), 3000);
     }
     setAdding(false);
@@ -250,8 +121,19 @@ export default function ProductPage() {
             <h1>{product.name}</h1>
 
             <div className="product-meta">
-              <span>By <strong>{product.artisan?.first_name} {product.artisan?.last_name}</strong></span>
-              {product.artisan?.location && <span>📍 {product.artisan.location}</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(212,160,23,0.15)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>
+                  {product.artisan?.first_name?.[0]}{product.artisan?.last_name?.[0]}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                    {product.artisan?.first_name} {product.artisan?.last_name}
+                  </div>
+                  {product.artisan?.location && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>📍 {product.artisan.location}</div>
+                  )}
+                </div>
+              </div>
               {product.reviews?.length > 0 && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Stars rating={Math.round(avgRating)} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import './AuthPage.css';
@@ -20,6 +20,8 @@ function PasswordInput({ value, onChange, placeholder = '•••••••�
 export default function LoginPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const justVerified = searchParams.get('verified') === '1';
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -90,6 +92,11 @@ export default function LoginPage() {
             <p className="auth-form-subtitle">Sign in to your account</p>
           </div>
 
+          {justVerified && (
+            <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
+              ✅ Email verified! Sign in to continue.
+            </div>
+          )}
           {error && (
             <div className="alert alert-error">
               {error}
