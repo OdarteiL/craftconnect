@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import ImageUploader from '../components/ImageUploader';
 import './DashboardPage.css';
 
@@ -16,6 +17,7 @@ const EMPTY_FORM = { name: '', description: '', story: '', price: '', stock: '',
 
 export default function DashboardPage() {
   const { user, isArtisan, isAdmin, logout } = useAuth();
+  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const [section, setSection] = useState('overview');
   const [products, setProducts] = useState([]);
@@ -63,6 +65,9 @@ export default function DashboardPage() {
   };
 
   const revenue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + parseFloat(o.total_amount || 0), 0);
+  const pendingOrders = orders.filter(o => o.status === 'pending').length;
+  const activeProducts = products.filter(p => p.status === 'active').length;
+  const liveAuctions = auctions.filter(a => a.status === 'active').length;
 
   if (!user || (!isArtisan && !isAdmin)) return null;
 
@@ -90,6 +95,9 @@ export default function DashboardPage() {
               <span className="db-user-role">{user.role}</span>
             </div>
           </div>
+          <button className="db-theme-btn" onClick={toggle}>
+            {theme === 'dark' ? '☀️' : '🌙'} {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
           <button className="db-logout" onClick={async () => { await logout(); navigate('/login'); }}>Sign out</button>
         </div>
       </aside>
@@ -104,22 +112,44 @@ export default function DashboardPage() {
             {section === 'overview' && (
               <div className="db-section">
                 <div className="db-page-header">
-                  <h1 className="db-page-title">Overview</h1>
-                  <span className="db-page-sub">Welcome back, {user.first_name}</span>
+                  <div>
+                    <h1 className="db-page-title">Good day, {user.first_name} 👋</h1>
+                    <span className="db-page-sub">Here's what's happening with your shop</span>
+                  </div>
+                  <button className="db-btn-primary" onClick={() => setSection('products')}>+ New Product</button>
                 </div>
+
+                {/* Stats */}
                 <div className="db-stats">
                   {[
-                    { label: 'Products', value: products.length, sub: `${products.filter(p => p.status === 'active').length} active` },
-                    { label: 'Orders', value: orders.length, sub: `${orders.filter(o => o.status === 'pending').length} pending` },
-                    { label: 'Revenue', value: `GHS ${revenue.toFixed(2)}`, sub: 'all time' },
-                    { label: 'Auctions', value: auctions.length, sub: `${auctions.filter(a => a.status === 'active').length} live` },
+                    { icon: '📦', label: 'Products', value: products.length, sub: `${activeProducts} active`, trend: activeProducts > 0 ? 'up' : 'neutral' },
+                    { icon: '🛒', label: 'Orders', value: orders.length, sub: `${pendingOrders} pending`, trend: pendingOrders > 0 ? 'up' : 'neutral' },
+                    { icon: '💰', label: 'Revenue', value: `GHS ${revenue.toFixed(2)}`, sub: 'all time', trend: revenue > 0 ? 'up' : 'neutral' },
+                    { icon: '🔨', label: 'Auctions', value: auctions.length, sub: `${liveAuctions} live`, trend: liveAuctions > 0 ? 'up' : 'neutral' },
                   ].map(s => (
                     <div key={s.label} className="db-stat-card">
+                      <span className="db-stat-icon">{s.icon}</span>
                       <span className="db-stat-label">{s.label}</span>
                       <span className="db-stat-value">{s.value}</span>
-                      <span className="db-stat-sub">{s.sub}</span>
+                      <span className={`db-stat-trend ${s.trend}`}>{s.sub}</span>
                     </div>
                   ))}
+                </div>
+
+                {/* Quick actions */}
+                <div className="db-quick-actions">
+                  <button className="db-quick-action" onClick={() => { setSection('products'); setShowForm(true); }}>
+                    <span className="db-quick-action-icon">➕</span> Add Product
+                  </button>
+                  <button className="db-quick-action" onClick={() => setSection('orders')}>
+                    <span className="db-quick-action-icon">📋</span> View Orders
+                  </button>
+                  <Link to="/auctions" className="db-quick-action">
+                    <span className="db-quick-action-icon">🔨</span> Browse Auctions
+                  </Link>
+                  <Link to="/products" className="db-quick-action">
+                    <span className="db-quick-action-icon">🛍️</span> Visit Shop
+                  </Link>
                 </div>
 
                 <div className="db-overview-grid">
@@ -173,7 +203,7 @@ export default function DashboardPage() {
                 <div className="db-page-header">
                   <div>
                     <h1 className="db-page-title">Products</h1>
-                    <span className="db-page-sub">{products.length} items</span>
+                    <span className="db-page-sub">{products.length} items · {activeProducts} active</span>
                   </div>
                   <button className="db-btn-primary" onClick={() => setShowForm(f => !f)}>
                     {showForm ? 'Cancel' : '+ New Product'}
@@ -240,7 +270,7 @@ export default function DashboardPage() {
                           <td style={{ width: 44, padding: '8px 8px 8px 20px' }}>
                             {p.images?.[0]
                               ? <img src={p.images[0]} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
-                              : <div style={{ width: 36, height: 36, borderRadius: 6, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🏺</div>
+                              : <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🏺</div>
                             }
                           </td>
                           <td><Link to={`/products/${p.id}`} className="db-td-primary db-td-link">{p.name}</Link></td>
@@ -255,7 +285,7 @@ export default function DashboardPage() {
                         </tr>
                       ))}
                       {products.length === 0 && (
-                        <tr><td colSpan={7} className="db-empty-row">No products yet. Click "+ New Product" to add one.</td></tr>
+                        <tr><td colSpan={8} className="db-empty-row">No products yet. Click "+ New Product" to add one.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -269,7 +299,7 @@ export default function DashboardPage() {
                 <div className="db-page-header">
                   <div>
                     <h1 className="db-page-title">Orders</h1>
-                    <span className="db-page-sub">{orders.length} total</span>
+                    <span className="db-page-sub">{orders.length} total · {pendingOrders} pending</span>
                   </div>
                 </div>
                 <div className="db-panel">
@@ -302,7 +332,7 @@ export default function DashboardPage() {
                 <div className="db-page-header">
                   <div>
                     <h1 className="db-page-title">Auctions</h1>
-                    <span className="db-page-sub">{auctions.length} total</span>
+                    <span className="db-page-sub">{auctions.length} total · {liveAuctions} live</span>
                   </div>
                   <Link to="/auctions" className="db-btn-primary">Browse Auctions →</Link>
                 </div>

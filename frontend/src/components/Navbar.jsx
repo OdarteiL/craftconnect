@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { count } = useCart();
+  const { theme, toggle } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -54,6 +56,15 @@ export default function Navbar() {
               Cart {count > 0 && <span className="badge">{count}</span>}
             </Link>
           )}
+
+          <button
+            className="theme-toggle"
+            onClick={toggle}
+            aria-label="Toggle theme"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
 
           <div className="nav-auth">
             {user ? (
