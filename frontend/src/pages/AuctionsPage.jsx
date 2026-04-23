@@ -97,29 +97,20 @@ function CountdownTimer({ endTime }) {
 }
 
 export default function AuctionsPage() {
-  const [auctions, setAuctions] = useState(DUMMY_AUCTIONS);
+  const [auctions, setAuctions] = useState([]);
   const [status, setStatus] = useState('active');
-  const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ pages: 1, total: DUMMY_AUCTIONS.length });
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ pages: 1, total: 0 });
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setLoading(true);
     api.get(`/auctions?status=${status}&page=${page}&limit=12`)
       .then(r => {
-        if (r.data.auctions?.length > 0) {
-          setAuctions(r.data.auctions);
-          setPagination(r.data.pagination || {});
-        }
+        setAuctions(r.data.auctions || []);
+        setPagination(r.data.pagination || { pages: 1, total: 0 });
       })
-      .catch(() => {
-        // Use dummy data with status filter
-        const filtered = status === 'all' 
-          ? DUMMY_AUCTIONS 
-          : DUMMY_AUCTIONS.filter(a => a.status === status);
-        setAuctions(filtered);
-        setPagination({ pages: 1, total: filtered.length });
-      })
+      .catch(() => setAuctions([]))
       .finally(() => setLoading(false));
   }, [status, page]);
 
@@ -127,7 +118,7 @@ export default function AuctionsPage() {
     <div className="page">
       <div className="container">
         <div className="page-header">
-          <h1>🔨 Live Auctions</h1>
+          <h1>Live Auctions</h1>
           <p>Bid on unique handcrafted items and find one-of-a-kind treasures</p>
         </div>
 
@@ -147,7 +138,6 @@ export default function AuctionsPage() {
           <div className="loading"><div className="spinner" /></div>
         ) : auctions.length === 0 ? (
           <div className="empty-state">
-            <div className="icon">🔨</div>
             <h3>No {status} auctions</h3>
             <p>Check back soon for new auction listings.</p>
           </div>
@@ -162,7 +152,7 @@ export default function AuctionsPage() {
                       alt={auction.product?.name}
                     />
                     <span className={`card-badge ${auction.status === 'active' ? 'auction' : auction.status === 'upcoming' ? 'upcoming' : 'ended'}`}>
-                      {auction.status === 'active' ? '🔴 Live' : auction.status === 'upcoming' ? '⏳ Upcoming' : '🏁 Ended'}
+                      {auction.status === 'active' ? 'Live' : auction.status === 'upcoming' ? 'Upcoming' : 'Ended'}
                     </span>
                   </div>
                   <div className="card-body">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -37,8 +37,10 @@ function CountdownTimer({ endTime }) {
 export default function AuctionDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [auction, setAuction] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [bidAmount, setBidAmount] = useState('');
   const [bidding, setBidding] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -47,17 +49,17 @@ export default function AuctionDetailPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
 
-    // Initial fetch
     api.get(`/auctions/${id}`)
       .then(r => {
         setAuction(r.data.auction);
         const min = parseFloat(r.data.auction.current_price || r.data.auction.starting_price) + 1;
         setBidAmount(min.toFixed(2));
       })
-      .catch(() => {})
+      .catch(err => {
+        setError(err.response?.data?.error || 'Auction not found.');
+      })
       .finally(() => setLoading(false));
 
-    // Socket.io real-time updates
     const socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:4000', {
       withCredentials: true
     });
@@ -86,7 +88,7 @@ export default function AuctionDetailPage() {
   const handleBid = async (e) => {
     e.preventDefault();
     if (!user) {
-      setMessage({ text: 'Please login to place a bid.', type: 'error' });
+      navigate(`/login?redirect=/auctions/${id}`);
       return;
     }
 
@@ -113,7 +115,12 @@ export default function AuctionDetailPage() {
   };
 
   if (loading) return <div className="page"><div className="container"><div className="loading"><div className="spinner" /></div></div></div>;
-  if (!auction) return <div className="page"><div className="container"><div className="empty-state"><h3>Auction not found</h3></div></div></div>;
+  if (error || !auction) return (
+    <div className="page"><div className="container"><div className="empty-state">
+      <h3>{error || 'Auction not found'}</h3>
+      <Link to="/auctions" className="btn btn-primary" style={{ marginTop: '16px' }}>Back to Auctions</Link>
+    </div></div></div>
+  );
 
   const currentPrice = parseFloat(auction.current_price || auction.starting_price);
 

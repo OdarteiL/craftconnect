@@ -43,7 +43,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const u = await login(form.email, form.password);
-      if (u.role === 'admin') navigate('/admin');
+      const redirect = searchParams.get('redirect');
+      if (redirect) navigate(redirect);
+      else if (u.role === 'admin') navigate('/admin');
       else if (u.role === 'artisan') navigate('/dashboard');
       else navigate('/products');
     } catch (err) {
