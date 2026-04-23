@@ -8,10 +8,10 @@ import logo from '../assets/CraftConnect.png';
 import './DashboardPage.css';
 
 const NAV = [
-  { key: 'overview',  icon: '▣',  label: 'Overview' },
-  { key: 'products',  icon: '⊞',  label: 'Products' },
-  { key: 'orders',    icon: '≡',  label: 'Orders' },
-  { key: 'auctions',  icon: '◈',  label: 'Auctions' },
+  { key: 'overview', label: 'Overview' },
+  { key: 'products', label: 'Products' },
+  { key: 'orders',   label: 'Orders' },
+  { key: 'auctions', label: 'Auctions' },
 ];
 
 const EMPTY_FORM = { name: '', description: '', story: '', price: '', stock: '', category_id: '', materials: '', images: [] };
@@ -82,7 +82,6 @@ export default function DashboardPage() {
         <nav className="db-nav">
           {NAV.map(n => (
             <button key={n.key} className={`db-nav-item ${section === n.key ? 'active' : ''}`} onClick={() => setSection(n.key)}>
-              <span className="db-nav-icon">{n.icon}</span>
               <span>{n.label}</span>
             </button>
           ))}
@@ -113,8 +112,8 @@ export default function DashboardPage() {
               <div className="db-section">
                 <div className="db-page-header">
                   <div>
-                    <h1 className="db-page-title">Good day, {user.first_name} 👋</h1>
-                    <span className="db-page-sub">Here's what's happening with your shop</span>
+                    <h1 className="db-page-title">Welcome back, {user.first_name}</h1>
+                    <span className="db-page-sub">Here's an overview of your shop</span>
                   </div>
                   <button className="db-btn-primary" onClick={() => setSection('products')}>+ New Product</button>
                 </div>
@@ -122,13 +121,12 @@ export default function DashboardPage() {
                 {/* Stats */}
                 <div className="db-stats">
                   {[
-                    { icon: '📦', label: 'Products', value: products.length, sub: `${activeProducts} active`, trend: activeProducts > 0 ? 'up' : 'neutral' },
-                    { icon: '🛒', label: 'Orders', value: orders.length, sub: `${pendingOrders} pending`, trend: pendingOrders > 0 ? 'up' : 'neutral' },
-                    { icon: '💰', label: 'Revenue', value: `GHS ${revenue.toFixed(2)}`, sub: 'all time', trend: revenue > 0 ? 'up' : 'neutral' },
-                    { icon: '🔨', label: 'Auctions', value: auctions.length, sub: `${liveAuctions} live`, trend: liveAuctions > 0 ? 'up' : 'neutral' },
+                    { label: 'Products', value: products.length, sub: `${activeProducts} active`, trend: activeProducts > 0 ? 'up' : 'neutral' },
+                    { label: 'Orders', value: orders.length, sub: `${pendingOrders} pending`, trend: pendingOrders > 0 ? 'up' : 'neutral' },
+                    { label: 'Revenue', value: `GHS ${revenue.toFixed(2)}`, sub: 'all time', trend: revenue > 0 ? 'up' : 'neutral' },
+                    { label: 'Auctions', value: auctions.length, sub: `${liveAuctions} live`, trend: liveAuctions > 0 ? 'up' : 'neutral' },
                   ].map(s => (
                     <div key={s.label} className="db-stat-card">
-                      <span className="db-stat-icon">{s.icon}</span>
                       <span className="db-stat-label">{s.label}</span>
                       <span className="db-stat-value">{s.value}</span>
                       <span className={`db-stat-trend ${s.trend}`}>{s.sub}</span>
@@ -139,16 +137,16 @@ export default function DashboardPage() {
                 {/* Quick actions */}
                 <div className="db-quick-actions">
                   <button className="db-quick-action" onClick={() => { setSection('products'); setShowForm(true); }}>
-                    <span className="db-quick-action-icon">➕</span> Add Product
+                    Add Product
                   </button>
                   <button className="db-quick-action" onClick={() => setSection('orders')}>
-                    <span className="db-quick-action-icon">📋</span> View Orders
+                    View Orders
                   </button>
                   <Link to="/auctions" className="db-quick-action">
-                    <span className="db-quick-action-icon">🔨</span> Browse Auctions
+                    Browse Auctions
                   </Link>
                   <Link to="/products" className="db-quick-action">
-                    <span className="db-quick-action-icon">🛍️</span> Visit Shop
+                    Visit Shop
                   </Link>
                 </div>
 
