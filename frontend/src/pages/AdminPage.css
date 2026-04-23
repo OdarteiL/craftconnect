@@ -1,77 +1,70 @@
 .admin-page {
   min-height: 100vh;
   padding: 2rem 1rem;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  background: var(--bg-secondary);
 }
 
 .admin-container {
   max-width: 1200px;
   margin: 0 auto;
-  background: #2a2a2a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .admin-container h1 {
-  color: #D4A017;
+  color: var(--gold);
   margin-bottom: 0.5rem;
   font-size: 2rem;
 }
 
 .subtitle {
-  color: #aaa;
+  color: var(--text-muted);
   margin-bottom: 2rem;
 }
 
 .message {
   padding: 1rem;
-  background: rgba(212, 160, 23, 0.2);
-  border: 1px solid #D4A017;
+  background: rgba(212, 160, 23, 0.15);
+  border: 1px solid var(--gold);
   border-radius: 8px;
-  color: #D4A017;
+  color: var(--gold);
   margin-bottom: 1.5rem;
 }
 
-.users-table {
-  overflow-x: auto;
-}
+.users-table { overflow-x: auto; }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+table { width: 100%; border-collapse: collapse; }
 
-thead {
-  background: #1a1a1a;
-}
+thead { background: var(--bg-secondary); }
 
 th {
   padding: 1rem;
   text-align: left;
-  color: #D4A017;
+  color: var(--gold);
   font-weight: 600;
-  border-bottom: 2px solid #444;
+  border-bottom: 2px solid var(--border);
 }
 
 td {
   padding: 1rem;
-  color: #fff;
-  border-bottom: 1px solid #444;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
 }
 
 .role-select {
   padding: 0.5rem;
-  background: #1a1a1a;
-  border: 1px solid #444;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
 .role-select:focus {
   outline: none;
-  border-color: #D4A017;
+  border-color: var(--gold);
 }
 
 .status {
@@ -81,15 +74,8 @@ td {
   font-weight: 600;
 }
 
-.status.active {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4CAF50;
-}
-
-.status.inactive {
-  background: rgba(244, 67, 54, 0.2);
-  color: #f44336;
-}
+.status.active  { background: rgba(76, 175, 80, 0.15); color: #4CAF50; }
+.status.inactive { background: rgba(244, 67, 54, 0.15); color: #f44336; }
 
 .delete-btn {
   padding: 0.5rem 1rem;
@@ -99,26 +85,9 @@ td {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: background 0.2s;
 }
-
-.delete-btn:hover {
-  background: #d32f2f;
-}
-
-@media (max-width: 768px) {
-  .admin-container {
-    padding: 1rem;
-  }
-
-  table {
-    font-size: 0.9rem;
-  }
-
-  th, td {
-    padding: 0.75rem 0.5rem;
-  }
-}
+.delete-btn:hover { background: #d32f2f; }
 
 .admin-header {
   display: flex;
@@ -135,26 +104,23 @@ td {
 }
 
 .admin-stat-card {
-  background: #1a1a1a;
-  border: 1px solid #444;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1.5rem;
   text-align: center;
 }
 
-.admin-stat-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
+.admin-stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
 
 .admin-stat-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #D4A017;
+  color: var(--gold);
 }
 
 .admin-stat-label {
-  color: #aaa;
+  color: var(--text-muted);
   font-size: 0.85rem;
   margin-top: 0.25rem;
 }
@@ -170,22 +136,23 @@ td {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  background: #1a1a1a;
-  border: 1px solid #444;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #fff;
+  color: var(--text-primary);
   text-decoration: none;
   font-weight: 500;
   transition: border-color 0.2s, color 0.2s;
 }
 
 .admin-quick-link:hover {
-  border-color: #D4A017;
-  color: #D4A017;
+  border-color: var(--gold);
+  color: var(--gold);
 }
 
 @media (max-width: 768px) {
-  .admin-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .admin-container { padding: 1rem; }
+  .admin-stats { grid-template-columns: repeat(2, 1fr); }
+  table { font-size: 0.9rem; }
+  th, td { padding: 0.75rem 0.5rem; }
 }

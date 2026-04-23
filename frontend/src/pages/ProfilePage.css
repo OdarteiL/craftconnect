@@ -1,20 +1,20 @@
 .profile-page {
   min-height: 100vh;
   padding: 2rem 1rem;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  background: var(--bg-secondary);
 }
 
 .profile-container {
   max-width: 800px;
   margin: 0 auto;
-  background: #2a2a2a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .profile-container h1 {
-  color: #D4A017;
+  color: var(--gold);
   margin-bottom: 1.5rem;
   font-size: 2rem;
 }
@@ -39,20 +39,21 @@
 }
 
 .role-section {
-  background: #1a1a1a;
+  background: var(--bg-secondary);
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 2rem;
+  border: 1px solid var(--border);
 }
 
 .role-section h2 {
-  color: #D4A017;
+  color: var(--gold);
   font-size: 1.3rem;
   margin-bottom: 0.5rem;
 }
 
 .role-description {
-  color: #aaa;
+  color: var(--text-muted);
   margin-bottom: 1rem;
 }
 
@@ -64,9 +65,9 @@
 .role-btn {
   flex: 1;
   padding: 1rem;
-  border: 2px solid #444;
-  background: #2a2a2a;
-  color: #fff;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
   border-radius: 8px;
   cursor: pointer;
   font-size: 1rem;
@@ -75,14 +76,14 @@
 }
 
 .role-btn:hover:not(:disabled) {
-  border-color: #D4A017;
-  background: #333;
+  border-color: var(--gold);
+  background: var(--bg-card-hover);
 }
 
 .role-btn.active {
-  border-color: #D4A017;
-  background: rgba(212, 160, 23, 0.2);
-  color: #D4A017;
+  border-color: var(--gold);
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--gold);
 }
 
 .role-btn:disabled {
@@ -91,7 +92,7 @@
 }
 
 .profile-form h2 {
-  color: #D4A017;
+  color: var(--gold);
   font-size: 1.3rem;
   margin-bottom: 1.5rem;
 }
@@ -108,7 +109,7 @@
 
 .form-group label {
   display: block;
-  color: #D4A017;
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
   font-weight: 500;
 }
@@ -117,23 +118,23 @@
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
-  background: #1a1a1a;
-  border: 1px solid #444;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #D4A017;
+  border-color: var(--gold);
 }
 
 .submit-btn {
   width: 100%;
   padding: 1rem;
-  background: #D4A017;
+  background: var(--gold);
   color: #1a1a1a;
   border: none;
   border-radius: 8px;
@@ -144,7 +145,7 @@
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: #e5b020;
+  background: var(--gold-light);
   transform: translateY(-2px);
 }
 
@@ -154,15 +155,7 @@
 }
 
 @media (max-width: 768px) {
-  .profile-container {
-    padding: 1.5rem;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .role-buttons {
-    flex-direction: column;
-  }
+  .profile-container { padding: 1.5rem; }
+  .form-row { grid-template-columns: 1fr; }
+  .role-buttons { flex-direction: column; }
 }
