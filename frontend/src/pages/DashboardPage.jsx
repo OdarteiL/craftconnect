@@ -15,6 +15,7 @@ const NAV = [
 ];
 
 const EMPTY_FORM = { name: '', description: '', story: '', price: '', stock: '', category_id: '', materials: '', images: [] };
+const EMPTY_AUCTION_FORM = { product_id: '', starting_price: '', reserve_price: '', start_time: '', end_time: '' };
 
 export default function DashboardPage() {
   const { user, isArtisan, isAdmin, logout } = useAuth();
@@ -28,6 +29,9 @@ export default function DashboardPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [showAuctionForm, setShowAuctionForm] = useState(false);
+  const [auctionForm, setAuctionForm] = useState(EMPTY_AUCTION_FORM);
+  const [savingAuction, setSavingAuction] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,6 +67,23 @@ export default function DashboardPage() {
     if (!confirm('Delete this product?')) return;
     try { await api.delete(`/products/${id}`); } catch {}
     setProducts(p => p.filter(x => x.id !== id));
+  };
+
+  const handleSaveAuction = async (e) => {
+    e.preventDefault();
+    setSavingAuction(true);
+    try {
+      await api.post('/auctions', {
+        ...auctionForm,
+        starting_price: parseFloat(auctionForm.starting_price),
+        reserve_price: auctionForm.reserve_price ? parseFloat(auctionForm.reserve_price) : undefined,
+      });
+      const r = await api.get('/auctions?limit=100');
+      setAuctions((r.data.auctions || []).filter(a => a.artisan_id === user.id));
+      setShowAuctionForm(false);
+      setAuctionForm(EMPTY_AUCTION_FORM);
+    } catch {}
+    setSavingAuction(false);
   };
 
   const revenue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + parseFloat(o.total_amount || 0), 0);
@@ -332,8 +353,48 @@ export default function DashboardPage() {
                     <h1 className="db-page-title">Auctions</h1>
                     <span className="db-page-sub">{auctions.length} total · {liveAuctions} live</span>
                   </div>
-                  <Link to="/auctions" className="db-btn-primary">Browse Auctions →</Link>
+                  <button className="db-btn-primary" onClick={() => setShowAuctionForm(f => !f)}>
+                    {showAuctionForm ? 'Cancel' : '+ New Auction'}
+                  </button>
                 </div>
+
+                {showAuctionForm && (
+                  <div className="db-panel db-form-panel">
+                    <div className="db-panel-header"><span className="db-panel-title">New Auction</span></div>
+                    <form onSubmit={handleSaveAuction} className="db-form">
+                      <div className="db-field">
+                        <label>Product *</label>
+                        <select className="db-input" value={auctionForm.product_id} onChange={e => setAuctionForm(f => ({ ...f, product_id: e.target.value }))} required>
+                          <option value="">Select a product…</option>
+                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="db-form-grid">
+                        <div className="db-field">
+                          <label>Starting Price (GHS) *</label>
+                          <input type="number" className="db-input" value={auctionForm.starting_price} onChange={e => setAuctionForm(f => ({ ...f, starting_price: e.target.value }))} required min="0" step="0.01" />
+                        </div>
+                        <div className="db-field">
+                          <label>Reserve Price (GHS) <span className="db-field-hint">optional</span></label>
+                          <input type="number" className="db-input" value={auctionForm.reserve_price} onChange={e => setAuctionForm(f => ({ ...f, reserve_price: e.target.value }))} min="0" step="0.01" />
+                        </div>
+                        <div className="db-field">
+                          <label>Start Time *</label>
+                          <input type="datetime-local" className="db-input" value={auctionForm.start_time} onChange={e => setAuctionForm(f => ({ ...f, start_time: e.target.value }))} required />
+                        </div>
+                        <div className="db-field">
+                          <label>End Time *</label>
+                          <input type="datetime-local" className="db-input" value={auctionForm.end_time} onChange={e => setAuctionForm(f => ({ ...f, end_time: e.target.value }))} required />
+                        </div>
+                      </div>
+                      <div className="db-form-actions">
+                        <button type="button" className="db-btn-ghost" onClick={() => { setShowAuctionForm(false); setAuctionForm(EMPTY_AUCTION_FORM); }}>Cancel</button>
+                        <button type="submit" className="db-btn-primary" disabled={savingAuction}>{savingAuction ? 'Creating…' : 'Create Auction'}</button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
                 <div className="db-panel">
                   <table className="db-table">
                     <thead>
@@ -342,7 +403,9 @@ export default function DashboardPage() {
                     <tbody>
                       {auctions.map(a => (
                         <tr key={a.id}>
-                          <td className="db-td-primary">{a.product?.name || '—'}</td>
+                          <td className="db-td-primary">
+                            <Link to={`/auctions/${a.id}`} className="db-td-link">{a.product?.name || '—'}</Link>
+                          </td>
                           <td>GHS {parseFloat(a.starting_price).toFixed(2)}</td>
                           <td>GHS {parseFloat(a.current_price || a.starting_price).toFixed(2)}</td>
                           <td>{a.bid_count || 0}</td>
@@ -351,7 +414,7 @@ export default function DashboardPage() {
                         </tr>
                       ))}
                       {auctions.length === 0 && (
-                        <tr><td colSpan={6} className="db-empty-row">No auctions yet.</td></tr>
+                        <tr><td colSpan={6} className="db-empty-row">No auctions yet. Click "+ New Auction" to create one.</td></tr>
                       )}
                     </tbody>
                   </table>

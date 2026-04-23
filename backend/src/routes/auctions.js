@@ -158,6 +158,18 @@ router.post('/:id/bid', authenticate, async (req, res) => {
       bid_count: auction.bid_count + 1
     });
 
+    // Broadcast real-time bid update to all clients watching this auction
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`auction:${auction.id}`).emit('bid:new', {
+        auctionId: auction.id,
+        amount: bidAmount,
+        bid_count: auction.bid_count + 1,
+        bidder: { first_name: req.user.first_name, last_name: req.user.last_name },
+        created_at: new Date().toISOString()
+      });
+    }
+
     // Notify artisan
     await Notification.create({
       user_id: auction.artisan_id,

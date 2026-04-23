@@ -1,13 +1,17 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const { Op } = require('sequelize');
 
 const { sequelize, testConnection } = require('./config/db');
 const { testRedis } = require('./config/redis');
+const { Auction, Bid, User } = require('./models');
 
 // Route imports
 const authRoutes = require('./routes/auth');
@@ -20,7 +24,28 @@ const categoryRoutes = require('./routes/categories');
 const { admin, buildAdminRouter } = require('./admin');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 4000;
+
+// Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true
+  }
+});
+
+// Expose io to routes
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  socket.on('join:auction', (auctionId) => {
+    socket.join(`auction:${auctionId}`);
+  });
+  socket.on('leave:auction', (auctionId) => {
+    socket.leave(`auction:${auctionId}`);
+  });
+});
 
 // Setup AdminJS Router
 const adminRouter = buildAdminRouter(app);
@@ -41,23 +66,16 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-// Logging
 app.use(morgan('dev'));
-
-// Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'craftconnect-api' });
 });
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -65,41 +83,75 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/reviews', reviewRoutes);
-// We will deprecate custom admin routes, using AdminJS instead
-// app.use('/api/admin', adminRoutes);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Global error handler
+app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use((err, req, res, next) => {
   console.error('Error:', err.message);
-  if (err.status === 401 || err.code === 'invalid_token' || err.code === 'unauthorized') {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (err.status === 401) return res.status(401).json({ error: 'Unauthorized' });
   res.status(err.status || 500).json({
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
 });
 
-// Start server
+// ── Auction expiry job (runs every 30s) ──────────────────────────────────────
+async function processExpiredAuctions() {
+  try {
+    const now = new Date();
+
+    // Activate upcoming auctions
+    await Auction.update(
+      { status: 'active' },
+      { where: { status: 'upcoming', start_time: { [Op.lte]: now }, end_time: { [Op.gt]: now } } }
+    );
+
+    // Find active auctions that have ended
+    const ended = await Auction.findAll({
+      where: { status: 'active', end_time: { [Op.lte]: now } }
+    });
+
+    for (const auction of ended) {
+      // Find winning bid
+      const winningBid = await Bid.findOne({
+        where: { auction_id: auction.id },
+        order: [['amount', 'DESC']],
+        include: [{ model: User, as: 'bidder', attributes: ['id', 'first_name', 'last_name', 'email'] }]
+      });
+
+      await auction.update({
+        status: 'ended',
+        winner_id: winningBid?.bidder_id || null
+      });
+
+      // Notify room
+      io.to(`auction:${auction.id}`).emit('auction:ended', {
+        auctionId: auction.id,
+        winner: winningBid?.bidder || null,
+        final_price: auction.current_price
+      });
+
+      console.log(`Auction ${auction.id} ended. Winner: ${winningBid?.bidder?.first_name || 'none'}`);
+    }
+  } catch (err) {
+    console.error('Auction expiry job error:', err.message);
+  }
+}
+
 async function start() {
   try {
-    console.log('Starting CraftConnect API...');
-    console.log('Testing database connection...');
     await testConnection();
-    console.log('Synchronizing database models...');
     await sequelize.sync({ alter: true });
-    console.log('Database models synchronized');
-
-    console.log('Testing Redis connection...');
     await testRedis();
 
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`\n🚀 CraftConnect API running on http://localhost:${PORT}`);
-      console.log(`📋 Health check: http://localhost:${PORT}/api/health\n`);
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.warn('SMTP not configured — emails disabled.');
+    }
+
+    // Start auction expiry job
+    setInterval(processExpiredAuctions, 30 * 1000);
+    processExpiredAuctions(); // run immediately on start
+
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`CraftConnect API running on http://localhost:${PORT}`);
     });
   } catch (err) {
     console.error('Failed to start server:', err.message);
@@ -107,5 +159,4 @@ async function start() {
   }
 }
 
-console.log('Initializing server...');
 start();
