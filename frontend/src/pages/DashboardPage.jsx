@@ -77,7 +77,7 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="db-sidebar">
         <div className="db-brand">
-          <img src={logo} alt="CraftConnect" style={{ height: '28px', width: 'auto' }} />
+          <img src={logo} alt="CraftConnect" style={{ height: '72px', width: 'auto' }} />
         </div>
         <nav className="db-nav">
           {NAV.map(n => (

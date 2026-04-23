@@ -20,7 +20,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand" onClick={close}>
-          <img src={logo} alt="CraftConnect" style={{ height: '32px', width: 'auto' }} />
+          <img src={logo} alt="CraftConnect" style={{ height: '72px', width: 'auto' }} />
         </Link>
 
         <button className="menu-toggle" onClick={() => setOpen(!open)} aria-label="Toggle menu">
