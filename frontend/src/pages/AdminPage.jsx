@@ -9,6 +9,7 @@ import '../pages/DashboardPage.css';
 const NAV = [
   { key: 'overview', label: 'Overview' },
   { key: 'users',    label: 'Users' },
+  { key: 'auctions', label: 'Auctions' },
 ];
 
 export default function AdminPage() {
@@ -17,9 +18,22 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const [section, setSection] = useState('overview');
   const [users, setUsers] = useState([]);
+  const [allAuctions, setAllAuctions] = useState([]);
   const [stats, setStats] = useState({ total: 0, buyers: 0, artisans: 0, admins: 0 });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [bidders, setBidders] = useState(null);
+  const [loadingBidders, setLoadingBidders] = useState(false);
+
+  const viewBidders = async (auction) => {
+    setLoadingBidders(true);
+    setBidders({ auctionName: auction.product?.name || 'Auction', bids: [] });
+    try {
+      const r = await api.get(`/auctions/${auction.id}/bids`);
+      setBidders({ auctionName: auction.product?.name || 'Auction', bids: r.data.bids || [] });
+    } catch {}
+    setLoadingBidders(false);
+  };
 
   useEffect(() => {
     if (!authLoading && !isAdmin) navigate('/');
@@ -40,6 +54,10 @@ export default function AdminPage() {
       })
       .catch(err => setMessage(err.response?.data?.error || 'Failed to fetch users'))
       .finally(() => setLoading(false));
+
+    api.get('/auctions?status=all&limit=100')
+      .then(r => setAllAuctions(r.data.auctions || []))
+      .catch(() => {});
   }, [isAdmin]);
 
   const handleRoleChange = async (userId, newRole) => {
@@ -164,8 +182,82 @@ export default function AdminPage() {
               </div>
             </>
           )}
+          {section === 'auctions' && (
+            <>
+              <div className="db-page-header">
+                <div>
+                  <h1 className="db-page-title">All Auctions</h1>
+                  <span className="db-page-sub">{allAuctions.length} total</span>
+                </div>
+              </div>
+              <div className="db-panel">
+                <table className="db-table">
+                  <thead>
+                    <tr><th>Product</th><th>Artisan</th><th>Current Price</th><th>Bids</th><th>Ends</th><th>Status</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    {allAuctions.map(a => (
+                      <tr key={a.id}>
+                        <td className="db-td-primary">{a.product?.name || '—'}</td>
+                        <td className="db-td-muted">{a.artisan?.first_name} {a.artisan?.last_name}</td>
+                        <td>GHS {parseFloat(a.current_price || a.starting_price).toFixed(2)}</td>
+                        <td>{a.bid_count || 0}</td>
+                        <td className="db-td-muted">{new Date(a.end_time).toLocaleDateString()}</td>
+                        <td><span className={`db-badge db-badge-${a.status}`}>{a.status}</span></td>
+                        <td>
+                          {a.bid_count > 0 && (
+                            <button className="db-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.78rem' }} onClick={() => viewBidders(a)}>
+                              View Bidders
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {allAuctions.length === 0 && <tr><td colSpan={7} className="db-empty-row">No auctions yet.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </main>
+
+      {/* Bidders Modal */}
+      {bidders && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', width: '100%', maxWidth: '680px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="db-panel-header" style={{ padding: '16px 20px' }}>
+              <span className="db-panel-title">Bidders — {bidders.auctionName}</span>
+              <button className="db-link" onClick={() => setBidders(null)}>✕ Close</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {loadingBidders ? (
+                <div className="db-loading" style={{ height: '120px' }}><div className="db-spinner" /></div>
+              ) : bidders.bids.length === 0 ? (
+                <p className="db-empty-row">No bids yet.</p>
+              ) : (
+                <table className="db-table">
+                  <thead>
+                    <tr><th>Rank</th><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Bid (GHS)</th></tr>
+                  </thead>
+                  <tbody>
+                    {bidders.bids.map((b, i) => (
+                      <tr key={b.id}>
+                        <td className="db-td-muted">#{i + 1}</td>
+                        <td className="db-td-primary">{b.bidder?.first_name} {b.bidder?.last_name}</td>
+                        <td className="db-td-muted">{b.bidder?.email || '—'}</td>
+                        <td className="db-td-muted">{b.bidder?.phone || '—'}</td>
+                        <td className="db-td-muted">{b.bidder?.location || '—'}</td>
+                        <td style={{ fontWeight: 600, color: 'var(--gold)' }}>{parseFloat(b.amount).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

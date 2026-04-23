@@ -55,6 +55,32 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/auctions/:id/bids — artisan/admin only, includes full bidder contact info
+router.get('/:id/bids', authenticate, async (req, res) => {
+  try {
+    const auction = await Auction.findByPk(req.params.id);
+    if (!auction) return res.status(404).json({ error: 'Auction not found.' });
+
+    const isOwner = auction.artisan_id === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'Not authorized.' });
+
+    const bids = await Bid.findAll({
+      where: { auction_id: req.params.id },
+      include: [{
+        model: User,
+        as: 'bidder',
+        attributes: ['id', 'first_name', 'last_name', 'email', 'phone', 'location']
+      }],
+      order: [['amount', 'DESC']]
+    });
+
+    res.json({ bids });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch bids.' });
+  }
+});
+
 // GET /api/auctions/:id
 router.get('/:id', async (req, res) => {
   try {

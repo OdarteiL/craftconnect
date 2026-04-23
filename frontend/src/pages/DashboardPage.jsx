@@ -32,7 +32,19 @@ export default function DashboardPage() {
   const [showAuctionForm, setShowAuctionForm] = useState(false);
   const [auctionForm, setAuctionForm] = useState(EMPTY_AUCTION_FORM);
   const [savingAuction, setSavingAuction] = useState(false);
+  const [bidders, setBidders] = useState(null); // { auctionName, bids[] }
+  const [loadingBidders, setLoadingBidders] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const viewBidders = async (auction) => {
+    setLoadingBidders(true);
+    setBidders({ auctionName: auction.product?.name || 'Auction', bids: [] });
+    try {
+      const r = await api.get(`/auctions/${auction.id}/bids`);
+      setBidders({ auctionName: auction.product?.name || 'Auction', bids: r.data.bids || [] });
+    } catch {}
+    setLoadingBidders(false);
+  };
 
   useEffect(() => {
     if (!user || (!isArtisan && !isAdmin)) { navigate('/'); return; }
@@ -398,7 +410,7 @@ export default function DashboardPage() {
                 <div className="db-panel">
                   <table className="db-table">
                     <thead>
-                      <tr><th>Product</th><th>Starting Price</th><th>Current Price</th><th>Bids</th><th>Ends</th><th>Status</th></tr>
+                      <tr><th>Product</th><th>Starting Price</th><th>Current Price</th><th>Bids</th><th>Ends</th><th>Status</th><th></th></tr>
                     </thead>
                     <tbody>
                       {auctions.map(a => (
@@ -411,6 +423,13 @@ export default function DashboardPage() {
                           <td>{a.bid_count || 0}</td>
                           <td className="db-td-muted">{new Date(a.end_time).toLocaleDateString()}</td>
                           <td><span className={`db-badge db-badge-${a.status}`}>{a.status}</span></td>
+                          <td>
+                            {a.bid_count > 0 && (
+                              <button className="db-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.78rem' }} onClick={() => viewBidders(a)}>
+                                View Bidders
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                       {auctions.length === 0 && (
@@ -424,6 +443,43 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      {/* Bidders Modal */}
+      {bidders && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', width: '100%', maxWidth: '640px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="db-panel-header" style={{ padding: '16px 20px' }}>
+              <span className="db-panel-title">Bidders — {bidders.auctionName}</span>
+              <button className="db-link" onClick={() => setBidders(null)}>✕ Close</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {loadingBidders ? (
+                <div className="db-loading" style={{ height: '120px' }}><div className="db-spinner" /></div>
+              ) : bidders.bids.length === 0 ? (
+                <p className="db-empty-row">No bids yet.</p>
+              ) : (
+                <table className="db-table">
+                  <thead>
+                    <tr><th>Rank</th><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Bid (GHS)</th></tr>
+                  </thead>
+                  <tbody>
+                    {bidders.bids.map((b, i) => (
+                      <tr key={b.id}>
+                        <td className="db-td-muted">#{i + 1}</td>
+                        <td className="db-td-primary">{b.bidder?.first_name} {b.bidder?.last_name}</td>
+                        <td className="db-td-muted">{b.bidder?.email || '—'}</td>
+                        <td className="db-td-muted">{b.bidder?.phone || '—'}</td>
+                        <td className="db-td-muted">{b.bidder?.location || '—'}</td>
+                        <td style={{ fontWeight: 600, color: 'var(--gold)' }}>{parseFloat(b.amount).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
