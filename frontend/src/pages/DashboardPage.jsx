@@ -4,6 +4,7 @@ import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import ImageUploader from '../components/ImageUploader';
+import logo from '../assets/CraftConnect.png';
 import './DashboardPage.css';
 
 const NAV = [
@@ -76,8 +77,7 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="db-sidebar">
         <div className="db-brand">
-          <span className="db-brand-icon">✦</span>
-          <span className="db-brand-name">CraftConnect</span>
+          <img src={logo} alt="CraftConnect" style={{ height: '28px', width: 'auto' }} />
         </div>
         <nav className="db-nav">
           {NAV.map(n => (

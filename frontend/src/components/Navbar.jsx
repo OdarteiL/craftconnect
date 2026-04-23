@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
+import logo from '../assets/CraftConnect.png';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -18,7 +19,9 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <Link to="/" className="navbar-brand" onClick={close}><span>CraftConnect</span></Link>
+        <Link to="/" className="navbar-brand" onClick={close}>
+          <img src={logo} alt="CraftConnect" style={{ height: '32px', width: 'auto' }} />
+        </Link>
 
         <button className="menu-toggle" onClick={() => setOpen(!open)} aria-label="Toggle menu">
           {open ? '✕' : '☰'}

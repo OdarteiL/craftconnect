@@ -94,12 +94,14 @@ export default function AuctionDetailPage() {
   const [bidding, setBidding] = useState(false);
   const [message, setMessage] = useState('');
 
-  const fetchAuction = () => {
+  const fetchAuction = (isInitial = false) => {
     api.get(`/auctions/${id}`)
       .then(r => {
         setAuction(r.data.auction);
-        const min = parseFloat(r.data.auction.current_price || r.data.auction.starting_price) + 1;
-        setBidAmount(min.toFixed(2));
+        if (isInitial) {
+          const min = parseFloat(r.data.auction.current_price || r.data.auction.starting_price) + 1;
+          setBidAmount(min.toFixed(2));
+        }
         setLoading(false);
       })
       .catch(() => {
@@ -107,8 +109,10 @@ export default function AuctionDetailPage() {
         const dummy = DUMMY_AUCTIONS[id];
         if (dummy) {
           setAuction(dummy);
-          const min = parseFloat(dummy.current_price || dummy.starting_price) + 1;
-          setBidAmount(min.toFixed(2));
+          if (isInitial) {
+            const min = parseFloat(dummy.current_price || dummy.starting_price) + 1;
+            setBidAmount(min.toFixed(2));
+          }
         }
         setLoading(false);
       });
@@ -116,8 +120,8 @@ export default function AuctionDetailPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    fetchAuction();
-    const interval = setInterval(fetchAuction, 10000);
+    fetchAuction(true);
+    const interval = setInterval(() => fetchAuction(false), 10000);
     return () => clearInterval(interval);
   }, [id]);
 
