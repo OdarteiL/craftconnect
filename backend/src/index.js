@@ -1,3 +1,6 @@
+'use strict';
+require('./telemetry'); // must be first
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -12,6 +15,7 @@ const { Op } = require('sequelize');
 const { sequelize, testConnection } = require('./config/db');
 const { testRedis } = require('./config/redis');
 const { Auction, Bid, User } = require('./models');
+const { metricsMiddleware, register, activeAuctionsGauge } = require('./services/metrics');
 
 // Route imports
 const authRoutes = require('./routes/auth');
@@ -45,6 +49,15 @@ io.on('connection', (socket) => {
   socket.on('leave:auction', (auctionId) => {
     socket.leave(`auction:${auctionId}`);
   });
+});
+
+// Metrics middleware (before routes)
+app.use(metricsMiddleware);
+
+// Prometheus scrape endpoint
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 // Setup AdminJS Router
@@ -131,6 +144,10 @@ async function processExpiredAuctions() {
 
       console.log(`Auction ${auction.id} ended. Winner: ${winningBid?.bidder?.first_name || 'none'}`);
     }
+
+    // Update active auctions gauge
+    const activeCount = await Auction.count({ where: { status: 'active' } });
+    activeAuctionsGauge.set(activeCount);
   } catch (err) {
     console.error('Auction expiry job error:', err.message);
   }
