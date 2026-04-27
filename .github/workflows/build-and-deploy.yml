@@ -3,6 +3,11 @@ name: CD
 on:
   push:
     branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - 'nginx/**'
 
 env:
   REGISTRY: ghcr.io

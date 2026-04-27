@@ -6,8 +6,14 @@ name: CI — Test & Build Check
 on:
   push:
     branches: [develop, staging]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
   pull_request:
     branches: [main, staging]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
 
 jobs:
   test:
