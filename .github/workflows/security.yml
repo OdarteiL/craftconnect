@@ -29,8 +29,8 @@ jobs:
         with:
           node-version: 20
       - name: Audit backend
-        run: npm audit --audit-level=high
+        run: npm i --package-lock-only && npm audit --audit-level=high
         working-directory: backend
       - name: Audit frontend
-        run: npm audit --audit-level=high
+        run: npm i --package-lock-only && npm audit --audit-level=high
         working-directory: frontend
