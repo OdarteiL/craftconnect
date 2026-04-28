@@ -19,6 +19,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
 import UserManagementPage from './pages/UserManagementPage';
+import PaymentVerifyPage from './pages/PaymentVerifyPage';
 
 function RoleRedirect() {
   const { user, loading } = useAuth();
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/payment/verify" element={<PaymentVerifyPage />} />
       </Routes>
       <Footer />
     </>
