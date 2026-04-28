@@ -73,5 +73,9 @@
 **Files:** `docker-compose.yml`
 **Fix:** Added `PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}` to backend environment in docker-compose.yml. Key was in `.env` but not forwarded to the container.
 
+### FX-018 — CORS_ORIGIN env var not passed to backend container
+**Files:** `docker-compose.yml`
+**Fix:** `CORS_ORIGIN` was set to `${FRONTEND_URL:-...}` instead of `${CORS_ORIGIN:-...}`, so the comma-separated multi-origin value was never forwarded to the container. Changed to `CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}`.
+
 ### FX-018 — Paystack callback redirects to wrong URL (no port), verify never called
 **Fix:** `FRONTEND_URL` on server was `http://178.105.30.31` (no port). Paystack callback URL was built from this, so after payment Paystack redirected to port 80 instead of 5173. Cart clear and email receipt never triggered. Fixed by setting `FRONTEND_URL=http://178.105.30.31:5173` on server and restarting backend.
