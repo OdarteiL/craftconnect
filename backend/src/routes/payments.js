@@ -65,9 +65,7 @@ router.post('/initialize', authenticate, async (req, res) => {
       await OrderItem.create({ ...item, order_id: order.id }, { transaction: t });
     }
 
-    await t.commit();
-
-    // Initialize Paystack transaction
+    // Initialize Paystack BEFORE committing — if it fails, we rollback the order
     const callbackUrl = `${process.env.FRONTEND_URL}/payment/verify?reference=${reference}&order_id=${order.id}`;
 
     const paystack = await initializePayment({
@@ -82,13 +80,15 @@ router.post('/initialize', authenticate, async (req, res) => {
       }
     });
 
+    await t.commit();
+
     res.json({
       authorization_url: paystack.authorization_url,
       reference,
       order_id: order.id
     });
   } catch (err) {
-    await t.rollback();
+    try { await t.rollback(); } catch (_) {}
     console.error('Payment init error:', err.message);
     res.status(500).json({ error: err.message || 'Failed to initialize payment.' });
   }
@@ -160,7 +160,7 @@ router.get('/verify', authenticate, async (req, res) => {
 
     res.json({ status: 'success', order_id: order.id });
   } catch (err) {
-    await t.rollback();
+    try { await t.rollback(); } catch (_) {}
     console.error('Payment verify error:', err.message);
     res.status(500).json({ error: err.message || 'Failed to verify payment.' });
   }
