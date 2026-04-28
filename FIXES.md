@@ -68,3 +68,7 @@
 
 ### FX-016 — Docker Compose `version` attribute warning
 **Note:** `version: '3.8'` is obsolete in newer Docker Compose. Non-breaking warning only — not yet removed.
+
+### FX-017 — PAYSTACK_SECRET_KEY not passed to backend container
+**Files:** `docker-compose.yml`
+**Fix:** Added `PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}` to backend environment in docker-compose.yml. Key was in `.env` but not forwarded to the container.
