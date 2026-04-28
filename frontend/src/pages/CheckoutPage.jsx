@@ -12,46 +12,30 @@ export default function CheckoutPage() {
     shipping_address: '',
     shipping_city: '',
     shipping_phone: '',
-    payment_method: 'mobile_money',
     notes: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-  };
+  if (!user) { navigate('/login?redirect=/checkout'); return null; }
+  if (items.length === 0) { navigate('/cart'); return null; }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.shipping_address) {
-      setError('Shipping address is required.');
-      return;
-    }
+    if (!form.shipping_address) { setError('Shipping address is required.'); return; }
+    if (!form.shipping_phone) { setError('Phone number is required.'); return; }
+
     setLoading(true);
     setError('');
     try {
-      await api.post('/orders', form);
-      await fetchCart();
-      navigate('/orders');
+      const { data } = await api.post('/payments/initialize', form);
+      // Redirect to Paystack hosted payment page
+      window.location.href = data.authorization_url;
     } catch (err) {
-      // Demo mode - simulate order
-      localStorage.removeItem('cart');
-      alert(`✓ Order placed successfully!\n\nTotal: GHS ${total}\nPayment: ${form.payment_method}\nShipping to: ${form.shipping_address}`);
-      navigate('/');
+      setError(err.response?.data?.error || 'Failed to initialize payment. Please try again.');
+      setLoading(false);
     }
-    setLoading(false);
   };
-
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
-
-  if (items.length === 0) {
-    navigate('/cart');
-    return null;
-  }
 
   return (
     <div className="page">
@@ -63,63 +47,60 @@ export default function CheckoutPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '32px', alignItems: 'start' }}>
           <form onSubmit={handleSubmit}>
-            {error && <div className="alert alert-error">{error}</div>}
+            {error && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{error}</div>}
 
+            {/* Shipping */}
             <div style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: '24px' }}>📦 Shipping Information</h2>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: '24px' }}>Shipping Information</h2>
               <div className="form-group">
                 <label>Shipping Address *</label>
                 <textarea
                   className="form-control"
-                  name="shipping_address"
                   value={form.shipping_address}
-                  onChange={handleChange}
+                  onChange={e => setForm(f => ({ ...f, shipping_address: e.target.value }))}
                   placeholder="Enter your full shipping address"
                   required
+                  rows={3}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>City</label>
-                  <input className="form-control" name="shipping_city" value={form.shipping_city} onChange={handleChange} placeholder="City" />
+                  <input className="form-control" value={form.shipping_city} onChange={e => setForm(f => ({ ...f, shipping_city: e.target.value }))} placeholder="City" />
                 </div>
                 <div className="form-group">
-                  <label>Phone</label>
-                  <input className="form-control" name="shipping_phone" value={form.shipping_phone} onChange={handleChange} placeholder="+233 XX XXX XXXX" />
+                  <label>Phone *</label>
+                  <input className="form-control" value={form.shipping_phone} onChange={e => setForm(f => ({ ...f, shipping_phone: e.target.value }))} placeholder="+233 XX XXX XXXX" required />
                 </div>
+              </div>
+              <div className="form-group">
+                <label>Order Notes (optional)</label>
+                <textarea className="form-control" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any special instructions..." rows={2} />
               </div>
             </div>
 
-            <div style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: '24px' }}>💳 Payment Method</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                {[
-                  { value: 'mobile_money', label: '📱 Mobile Money', desc: 'MTN, Vodafone, AirtelTigo' },
-                  { value: 'card', label: '💳 Card', desc: 'Visa / Mastercard' },
-                  { value: 'bank', label: '🏦 Bank Transfer', desc: 'Direct transfer' }
-                ].map(method => (
-                  <div
-                    key={method.value}
-                    className={`role-option ${form.payment_method === method.value ? 'active' : ''}`}
-                    onClick={() => setForm(f => ({ ...f, payment_method: method.value }))}
-                  >
-                    <div className="name">{method.label}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{method.desc}</div>
-                  </div>
+            {/* Payment info */}
+            <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: '12px' }}>Payment</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
+                You'll be redirected to Paystack's secure payment page to complete your payment.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {['MTN MoMo', 'Vodafone Cash', 'AirtelTigo Money', 'Visa', 'Mastercard'].map(m => (
+                  <span key={m} style={{ padding: '6px 12px', background: 'var(--bg-secondary)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{m}</span>
                 ))}
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Order Notes (optional)</label>
-              <textarea className="form-control" name="notes" value={form.notes} onChange={handleChange} placeholder="Any special instructions..." />
-            </div>
-
             <button className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
-              {loading ? 'Placing Order...' : `Place Order — GHS ${total}`}
+              {loading ? 'Redirecting to payment...' : `Pay GHS ${total} securely`}
             </button>
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '12px' }}>
+              Secured by Paystack. We never store your card details.
+            </p>
           </form>
 
+          {/* Order summary */}
           <div className="cart-summary">
             <h2>Order Summary</h2>
             {items.map(item => (

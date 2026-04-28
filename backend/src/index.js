@@ -25,6 +25,7 @@ const orderRoutes = require('./routes/orders');
 const auctionRoutes = require('./routes/auctions');
 const reviewRoutes = require('./routes/reviews');
 const categoryRoutes = require('./routes/categories');
+const paymentRoutes = require('./routes/payments');
 const { admin, buildAdminRouter } = require('./admin');
 
 const app = express();
@@ -79,6 +80,9 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// Paystack webhook needs raw body — must be before express.json()
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -96,6 +100,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use((err, req, res, next) => {
