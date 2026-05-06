@@ -77,5 +77,9 @@
 **Files:** `docker-compose.yml`
 **Fix:** `CORS_ORIGIN` was set to `${FRONTEND_URL:-...}` instead of `${CORS_ORIGIN:-...}`, so the comma-separated multi-origin value was never forwarded to the container. Changed to `CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}`.
 
+### FX-019 — PostgreSQL and Redis exposed to public internet (Hetzner/BSI abuse report)
+**Files:** `docker-compose.yml`
+**Fix:** Changed port bindings from `"5432:5432"` and `"6379:6379"` to `"127.0.0.1:5432:5432"` and `"127.0.0.1:6379:6379"`. Databases are now only accessible from localhost/containers, not from the internet.
+
 ### FX-018 — Paystack callback redirects to wrong URL (no port), verify never called
 **Fix:** `FRONTEND_URL` on server was `http://178.105.30.31` (no port). Paystack callback URL was built from this, so after payment Paystack redirected to port 80 instead of 5173. Cart clear and email receipt never triggered. Fixed by setting `FRONTEND_URL=http://178.105.30.31:5173` on server and restarting backend.
