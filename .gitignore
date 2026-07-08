@@ -46,3 +46,6 @@ Thumbs.db
 # Project specific
 uploads/
 .kiro/
+
+# Personal local docs (not shared with the team)
+_my-docs/
