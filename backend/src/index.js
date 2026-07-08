@@ -1,3 +1,6 @@
+'use strict';
+require('./telemetry'); // must be first
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -12,6 +15,7 @@ const { Op } = require('sequelize');
 const { sequelize, testConnection } = require('./config/db');
 const { testRedis } = require('./config/redis');
 const { Auction, Bid, User } = require('./models');
+const { metricsMiddleware, register, activeAuctionsGauge } = require('./services/metrics');
 
 // Route imports
 const authRoutes = require('./routes/auth');
@@ -21,6 +25,7 @@ const orderRoutes = require('./routes/orders');
 const auctionRoutes = require('./routes/auctions');
 const reviewRoutes = require('./routes/reviews');
 const categoryRoutes = require('./routes/categories');
+const paymentRoutes = require('./routes/payments');
 const { admin, buildAdminRouter } = require('./admin');
 
 const app = express();
@@ -47,6 +52,15 @@ io.on('connection', (socket) => {
   });
 });
 
+// Metrics middleware (before routes)
+app.use(metricsMiddleware);
+
+// Prometheus scrape endpoint
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
+
 // Setup AdminJS Router
 const adminRouter = buildAdminRouter(app);
 app.use(admin.options.rootPath, adminRouter);
@@ -54,7 +68,11 @@ app.use(admin.options.rootPath, adminRouter);
 // Security middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    const allowed = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(o => o.trim());
+    if (!origin || allowed.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
@@ -65,6 +83,9 @@ const limiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api/', limiter);
+
+// Paystack webhook needs raw body — must be before express.json()
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -83,6 +104,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use((err, req, res, next) => {
@@ -131,6 +153,10 @@ async function processExpiredAuctions() {
 
       console.log(`Auction ${auction.id} ended. Winner: ${winningBid?.bidder?.first_name || 'none'}`);
     }
+
+    // Update active auctions gauge
+    const activeCount = await Auction.count({ where: { status: 'active' } });
+    activeAuctionsGauge.set(activeCount);
   } catch (err) {
     console.error('Auction expiry job error:', err.message);
   }

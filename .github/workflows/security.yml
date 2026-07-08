@@ -3,8 +3,15 @@ name: Security Scan
 on:
   push:
     branches: [main, staging, develop]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'package.json'
   pull_request:
     branches: [main, staging]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
   schedule:
     - cron: '0 2 * * 1'  # weekly Monday 2am
 
@@ -29,8 +36,8 @@ jobs:
         with:
           node-version: 20
       - name: Audit backend
-        run: npm audit --audit-level=high
+        run: npm i --package-lock-only && npm audit --audit-level=high
         working-directory: backend
       - name: Audit frontend
-        run: npm audit --audit-level=high
+        run: npm i --package-lock-only && npm audit --audit-level=high
         working-directory: frontend
