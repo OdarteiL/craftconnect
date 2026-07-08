@@ -31,7 +31,7 @@ jobs:
           node-version: 20
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm install
         working-directory: frontend
 
       - name: Build frontend (Vite production build)
@@ -44,5 +44,5 @@ jobs:
 
       # ── Backend ───────────────────────────────────────────────────────────
       - name: Install backend dependencies
-        run: npm ci
+        run: npm install
         working-directory: backend
