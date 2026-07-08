@@ -89,6 +89,20 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// express.json() throws a SyntaxError (not a normal request error) when a
+// request declares Content-Type: application/json but sends an empty or
+// malformed body -- e.g. axios's `api.post('/some/route')` with no second
+// argument still sets this header. Without this handler, that throw skips
+// every route's own try/catch and falls through to the generic error
+// handler below as a misleading 500 instead of a clean 400.
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON in request body' });
+  }
+  next(err);
+});
+
 app.use(cookieParser());
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
