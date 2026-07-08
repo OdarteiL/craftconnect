@@ -86,22 +86,34 @@ jobs:
         working-directory: frontend
 
   build-and-push:
-    name: Build, Scan & Push Images
+    name: Build, Scan & Push Images (${{ matrix.image }})
     runs-on: ubuntu-latest
     needs: [build-test, security-scan]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
-    outputs:
-      image_tag: ${{ steps.meta.outputs.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: backend
+            context: ./backend
+          - image: frontend
+            context: ./frontend
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set lowercase image prefix
+      - name: Set lowercase image prefix and short SHA tag
         # GHCR repository paths must be all-lowercase; github.repository
         # preserves the owner's actual case ("OdarteiL/craftconnect").
-        run: echo "IMAGE_PREFIX=${{ env.REGISTRY }}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+        # The tag is derived from github.sha directly (not a shared step
+        # output) so both matrix jobs -- and the later deploy job -- can
+        # compute the identical value independently, without relying on
+        # output propagation across a matrixed job.
+        run: |
+          echo "IMAGE_PREFIX=${{ env.REGISTRY }}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -110,114 +122,56 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_PREFIX }}/backend,${{ env.IMAGE_PREFIX }}/frontend
-          tags: |
-            type=sha,prefix=,format=short
-            type=raw,value=latest
-
       - uses: docker/setup-buildx-action@v3
 
-      # ── Backend ──────────────────────────────────────────────────────────
-      - name: Build backend image (local only, not pushed yet)
+      - name: Build image (local only, not pushed yet)
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: ${{ matrix.context }}
           push: false
           load: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
-            ${{ env.IMAGE_PREFIX }}/backend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Trivy scan — backend (CRITICAL, blocking)
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
-          severity: CRITICAL
-          exit-code: '1'
-          ignore-unfixed: true
-          format: table
-
-      - name: Trivy scan — backend (HIGH+CRITICAL, report only)
-        if: always()
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
-          severity: HIGH,CRITICAL
-          exit-code: '0'
-          format: table
-          output: trivy-backend-report.txt
-
-      - name: Publish backend Trivy report to job summary
-        if: always()
-        run: |
-          {
-            echo "### Trivy scan — backend image"
-            echo '```'
-            cat trivy-backend-report.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Push backend image
-        run: |
-          docker push ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
-          docker push ${{ env.IMAGE_PREFIX }}/backend:latest
-
-      # ── Frontend ─────────────────────────────────────────────────────────
-      - name: Build frontend image (local only, not pushed yet)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: false
-          load: true
-          tags: |
-            ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
-            ${{ env.IMAGE_PREFIX }}/frontend:latest
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}:latest
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
             VITE_CLOUDINARY_CLOUD_NAME=${{ secrets.VITE_CLOUDINARY_CLOUD_NAME }}
             VITE_CLOUDINARY_UPLOAD_PRESET=${{ secrets.VITE_CLOUDINARY_UPLOAD_PRESET }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
-      - name: Trivy scan — frontend (CRITICAL, blocking)
+      - name: Trivy scan (single pass — HIGH+CRITICAL to JSON, blocks only on CRITICAL)
+        # One Trivy invocation instead of two: scan once to JSON (never
+        # fails at the action level), then a jq step below both renders
+        # the human-readable summary and decides pass/fail from the same
+        # data, instead of running the full vulnerability DB match twice.
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
-          severity: CRITICAL
-          exit-code: '1'
-          ignore-unfixed: true
-          format: table
-
-      - name: Trivy scan — frontend (HIGH+CRITICAL, report only)
-        if: always()
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
+          image-ref: ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}:${{ env.IMAGE_TAG }}
           severity: HIGH,CRITICAL
           exit-code: '0'
-          format: table
-          output: trivy-frontend-report.txt
+          ignore-unfixed: true
+          format: json
+          output: trivy-report.json
 
-      - name: Publish frontend Trivy report to job summary
-        if: always()
+      - name: Publish report and fail on CRITICAL findings
         run: |
+          CRITICAL_COUNT=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-report.json)
           {
-            echo "### Trivy scan — frontend image"
+            echo "### Trivy scan — ${{ matrix.image }} image ($CRITICAL_COUNT CRITICAL)"
             echo '```'
-            cat trivy-frontend-report.txt
+            jq -r '.Results[]?.Vulnerabilities[]? | "\(.Severity)\t\(.VulnerabilityID)\t\(.PkgName)\t\(.Title)"' trivy-report.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            echo "::error::$CRITICAL_COUNT CRITICAL vulnerabilities found in ${{ matrix.image }} image"
+            exit 1
+          fi
 
-      - name: Push frontend image
+      - name: Push image
         run: |
-          docker push ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
-          docker push ${{ env.IMAGE_PREFIX }}/frontend:latest
+          docker push ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}:latest
 
   deploy:
     name: Deploy to Hetzner
@@ -229,6 +183,13 @@ jobs:
       contents: read
       packages: read
     steps:
+      - name: Compute short SHA image tag
+        # Matches build-and-push's ${GITHUB_SHA::7} derivation exactly.
+        # Computed here (on the runner, via GitHub's own expression syntax)
+        # rather than inside the SSH script block below -- GITHUB_SHA is a
+        # runner-side env var and isn't set on the remote server at all.
+        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
       - name: SSH & deploy
         uses: appleboy/ssh-action@v1
         with:
@@ -237,7 +198,7 @@ jobs:
           key: ${{ secrets.HETZNER_SSH_KEY }}
           envs: IMAGE_TAG,GHCR_USER,GHCR_TOKEN
           script: |
-            export IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}
+            export IMAGE_TAG=${{ env.IMAGE_TAG }}
             export GHCR_USER=${{ github.actor }}
             export GHCR_TOKEN=${{ secrets.GITHUB_TOKEN }}
             bash /opt/craftconnect/scripts/deploy.sh
