@@ -1,0 +1,17 @@
+{
+  // Enforces the same bar as before (`npm audit --audit-level=high`), but
+  // lets us explicitly track known, currently-unfixable findings instead of
+  // permanently blocking the pipeline on them.
+  "high": true,
+  "allowlist": [
+    // Bundled inside AdminJS's own node_modules (adminjs@^6.8.1), not a
+    // direct dependency we control. The only fix path is AdminJS v7, which
+    // is ESM-only -- our entire backend is CommonJS, so upgrading requires
+    // migrating every file (routes, models, services, index.js) from
+    // require/module.exports to import/export first. That's its own
+    // dedicated project, not a dependency bump. Tracked in
+    // _my-docs/FIXES.md (FX-025) -- revisit when the ESM migration happens.
+    "axios",
+    "serialize-javascript"
+  ]
+}

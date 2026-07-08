@@ -1,0 +1,19 @@
+{
+  // Enforces the same bar as before (`npm audit --audit-level=high`), but
+  // lets us explicitly track known, currently-unfixable findings instead of
+  // permanently blocking the pipeline on them.
+  "high": true,
+  "allowlist": [
+    // vite's bundled esbuild has a dev-server-only vulnerability (a
+    // malicious website could send requests to the local Vite dev server
+    // and read the response). This never ships to production: the prod
+    // build is static files served via `serve` in a multi-stage Docker
+    // build, with vite/esbuild/node_modules entirely absent from the final
+    // image. The proposed fix (vite@8.1.3) is a 3-major-version jump from
+    // our current ^5.4.4 -- too large to verify safely without dedicated
+    // testing time. Tracked in _my-docs/FIXES.md (FX-025) -- revisit as
+    // its own upgrade project, not bundled into a security-audit fix.
+    "vite",
+    "esbuild"
+  ]
+}

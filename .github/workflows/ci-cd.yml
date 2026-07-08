@@ -75,10 +75,14 @@ jobs:
         with:
           node-version: 20
       - name: Audit backend dependencies
-        run: npm i --package-lock-only && npm audit --audit-level=high
+        # audit-ci.jsonc allowlists a small set of known, currently-unfixable
+        # findings (documented inline in that file and in FX-025) so the
+        # pipeline still blocks on anything new instead of being permanently
+        # stuck on issues with no available fix yet.
+        run: npm i --package-lock-only && npx --yes audit-ci@7.1.0 --config audit-ci.jsonc
         working-directory: backend
       - name: Audit frontend dependencies
-        run: npm i --package-lock-only && npm audit --audit-level=high
+        run: npm i --package-lock-only && npx --yes audit-ci@7.1.0 --config audit-ci.jsonc
         working-directory: frontend
 
   build-and-push:
