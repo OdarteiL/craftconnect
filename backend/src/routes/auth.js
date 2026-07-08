@@ -438,6 +438,14 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
     await user.destroy();
     res.json({ message: 'User deleted.' });
   } catch (err) {
+    // auctions/bids/reviews have no ON DELETE behavior at the DB level, so
+    // deleting a user with any of that history throws here instead of
+    // succeeding. Deactivate (is_active) is the supported way to remove a
+    // user without deleting -- see admin/index.js for the matching AdminJS
+    // delete-handler override.
+    if (err.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(409).json({ error: 'This user has related auction, bid, or review history and cannot be deleted. Deactivate the account instead.' });
+    }
     res.status(500).json({ error: 'Failed to delete user.' });
   }
 });

@@ -85,6 +85,48 @@ const adminOptions = {
             isVisible: { list: false, filter: false, show: true, edit: false },
           },
         },
+        actions: {
+          // Several tables that reference users (auctions.artisan_id/
+          // winner_id, bids.bidder_id, reviews.buyer_id) have no ON DELETE
+          // behavior at the database level, so deleting a user with any
+          // auction/bid/review history throws an unhandled
+          // SequelizeForeignKeyConstraintError -- AdminJS's own delete
+          // handler only catches ValidationError and re-throws everything
+          // else, so this surfaced as a raw 500 with the underlying
+          // Postgres error message. Deliberately not changing the FK
+          // behavior to CASCADE: that would risk deleting other users'
+          // bid history (e.g. every bid anyone placed on a deleted
+          // artisan's auctions). The app already has an `is_active`
+          // toggle built for exactly this "remove without deleting"
+          // case -- point admins there instead.
+          delete: {
+            handler: async (request, response, context) => {
+              const { record, resource, currentAdmin, h, translateMessage } = context;
+              try {
+                await resource.delete(request.params.recordId, context);
+              } catch (error) {
+                if (error.name === 'SequelizeForeignKeyConstraintError') {
+                  return {
+                    record: record.toJSON(currentAdmin),
+                    notice: {
+                      message: 'This user has related auction, bid, or review history and cannot be deleted. Deactivate the account (Is Active) instead.',
+                      type: 'error',
+                    },
+                  };
+                }
+                throw error;
+              }
+              return {
+                record: record.toJSON(currentAdmin),
+                redirectUrl: h.resourceUrl({ resourceId: resource._decorated?.id() || resource.id() }),
+                notice: {
+                  message: translateMessage('successfullyDeleted', resource.id()),
+                  type: 'success',
+                },
+              };
+            },
+          },
+        },
       },
     },
     { resource: Category },
