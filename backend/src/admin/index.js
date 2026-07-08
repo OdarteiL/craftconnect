@@ -36,12 +36,54 @@ const adminOptions = {
       resource: User,
       options: {
         properties: {
-          password_hash: {
-            isVisible: { list: false, filter: false, show: false, edit: true },
+          // Constrain to the app's actual valid roles (see the whitelist
+          // enforced in routes/auth.js) instead of a free-text field --
+          // a typo here would silently bypass every role check in the app
+          // since the `role` column has no DB-level constraint.
+          role: {
+            availableValues: [
+              { value: 'buyer', label: 'Buyer' },
+              { value: 'artisan', label: 'Artisan (Seller)' },
+              { value: 'admin', label: 'Admin' },
+            ],
           },
-          auth0_id: {
-            isVisible: { list: false, show: true, edit: true, filter: true },
-          }
+          // Hidden everywhere: a raw bcrypt hash has no legitimate reason
+          // to be hand-typed by an admin. Set/reset passwords via the
+          // app's own auth flows (register + promote, or password reset)
+          // instead of editing this field directly.
+          password_hash: {
+            isVisible: false,
+          },
+          // System-managed bookkeeping fields: useful to see on a user's
+          // detail page for support/debugging, but never something an
+          // admin should hand-type when creating or editing a user.
+          last_login_ip: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
+          last_login_at: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
+          lock_until: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
+          login_attempts: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
+          refresh_tokens: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
+          password_reset_expires: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
+          password_reset_token: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
+          email_verification_expires: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
+          email_verification_token: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+          },
         },
       },
     },
