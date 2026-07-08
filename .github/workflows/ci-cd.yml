@@ -135,7 +135,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trivy scan — backend (CRITICAL, blocking)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
           severity: CRITICAL
@@ -145,7 +145,7 @@ jobs:
 
       - name: Trivy scan — backend (HIGH+CRITICAL, report only)
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
           severity: HIGH,CRITICAL
@@ -186,7 +186,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trivy scan — frontend (CRITICAL, blocking)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
           severity: CRITICAL
@@ -196,7 +196,7 @@ jobs:
 
       - name: Trivy scan — frontend (HIGH+CRITICAL, report only)
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
           severity: HIGH,CRITICAL
