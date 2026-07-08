@@ -1,19 +1,12 @@
-name: Security Scan
+name: Weekly Security Scan
 
 on:
-  push:
-    branches: [main, staging, develop]
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
-      - 'package.json'
-  pull_request:
-    branches: [main, staging]
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
   schedule:
-    - cron: '0 2 * * 1'  # weekly Monday 2am
+    - cron: '0 2 * * 1'  # every Monday 02:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
 
 jobs:
   secrets-scan:
