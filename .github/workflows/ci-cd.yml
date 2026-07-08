@@ -2,49 +2,276 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [develop, staging, main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'docker-compose.prod.yml'
+      - 'nginx/**'
+      - 'scripts/deploy.sh'
+      - '.github/workflows/ci-cd.yml'
   pull_request:
-    branches: [main]
+    branches: [develop, staging, main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'docker-compose.prod.yml'
+      - 'nginx/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
-  test:
-    name: Build Check
+  build-test:
+    name: Build & Test Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Frontend build
-        run: npm install && npm run build
+      - name: Install frontend dependencies
+        run: npm install
+        working-directory: frontend
+
+      - name: Frontend test (placeholder — no-ops until a real suite exists)
+        run: npm test --if-present
+        working-directory: frontend
+
+      - name: Build frontend (Vite production build)
+        run: npm run build
         working-directory: frontend
         env:
           VITE_API_URL: http://localhost:4000/api
           VITE_CLOUDINARY_CLOUD_NAME: placeholder
           VITE_CLOUDINARY_UPLOAD_PRESET: placeholder
 
-      - name: Backend install
+      - name: Install backend dependencies
         run: npm install
         working-directory: backend
+
+      - name: Backend test (placeholder — no-ops until a real suite exists)
+        run: npm test --if-present
+        working-directory: backend
+
+  security-scan:
+    name: Security Scan (Secrets + Dependency Audit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Audit backend dependencies
+        # audit-ci.jsonc allowlists a small set of known, currently-unfixable
+        # findings (documented inline in that file and in FX-025) so the
+        # pipeline still blocks on anything new instead of being permanently
+        # stuck on issues with no available fix yet.
+        run: npm i --package-lock-only && npx --yes audit-ci@7.1.0 --config audit-ci.jsonc
+        working-directory: backend
+      - name: Audit frontend dependencies
+        run: npm i --package-lock-only && npx --yes audit-ci@7.1.0 --config audit-ci.jsonc
+        working-directory: frontend
+
+  build-and-push:
+    name: Build, Scan & Push Images
+    runs-on: ubuntu-latest
+    needs: [build-test, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set lowercase image prefix
+        # GHCR repository paths must be all-lowercase; github.repository
+        # preserves the owner's actual case ("OdarteiL/craftconnect").
+        run: echo "IMAGE_PREFIX=${{ env.REGISTRY }}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/backend,${{ env.IMAGE_PREFIX }}/frontend
+          tags: |
+            type=sha,prefix=,format=short
+            type=raw,value=latest
+
+      - uses: docker/setup-buildx-action@v3
+
+      # ── Backend ──────────────────────────────────────────────────────────
+      - name: Build backend image (local only, not pushed yet)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          load: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy scan — backend (CRITICAL, blocking)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
+          severity: CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: table
+
+      - name: Trivy scan — backend (HIGH+CRITICAL, report only)
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          format: table
+          output: trivy-backend-report.txt
+
+      - name: Publish backend Trivy report to job summary
+        if: always()
+        run: |
+          {
+            echo "### Trivy scan — backend image"
+            echo '```'
+            cat trivy-backend-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push backend image
+        run: |
+          docker push ${{ env.IMAGE_PREFIX }}/backend:${{ steps.meta.outputs.version }}
+          docker push ${{ env.IMAGE_PREFIX }}/backend:latest
+
+      # ── Frontend ─────────────────────────────────────────────────────────
+      - name: Build frontend image (local only, not pushed yet)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          load: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}/frontend:latest
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_CLOUDINARY_CLOUD_NAME=${{ secrets.VITE_CLOUDINARY_CLOUD_NAME }}
+            VITE_CLOUDINARY_UPLOAD_PRESET=${{ secrets.VITE_CLOUDINARY_UPLOAD_PRESET }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy scan — frontend (CRITICAL, blocking)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
+          severity: CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: table
+
+      - name: Trivy scan — frontend (HIGH+CRITICAL, report only)
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          format: table
+          output: trivy-frontend-report.txt
+
+      - name: Publish frontend Trivy report to job summary
+        if: always()
+        run: |
+          {
+            echo "### Trivy scan — frontend image"
+            echo '```'
+            cat trivy-frontend-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push frontend image
+        run: |
+          docker push ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.version }}
+          docker push ${{ env.IMAGE_PREFIX }}/frontend:latest
 
   deploy:
     name: Deploy to Hetzner
     runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    permissions:
+      contents: read
+      packages: read
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy via SSH
+      - name: SSH & deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
+          envs: IMAGE_TAG,GHCR_USER,GHCR_TOKEN
           script: |
-            cd /opt/craftconnect
-            git pull origin main
-            docker compose up --build -d
-            docker image prune -f
+            export IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}
+            export GHCR_USER=${{ github.actor }}
+            export GHCR_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            bash /opt/craftconnect/scripts/deploy.sh
+
+  promote:
+    name: Open Promotion PR
+    runs-on: ubuntu-latest
+    needs: [build-test, security-scan]
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging')
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine promotion target
+        id: promo
+        run: |
+          if [ "${{ github.ref_name }}" = "develop" ]; then
+            echo "base=staging" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref_name }}" = "staging" ]; then
+            echo "base=main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open promotion PR (no-op if one already exists, human still merges)
+        if: steps.promo.outputs.base != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --head "${{ github.ref_name }}" \
+            --base "${{ steps.promo.outputs.base }}" \
+            --title "Promote ${{ github.ref_name }} → ${{ steps.promo.outputs.base }}" \
+            --body "Automated promotion PR opened after CI checks passed on \`${{ github.ref_name }}\` @ ${{ github.sha }}. This PR is never auto-merged — review and merge manually." \
+            || true
