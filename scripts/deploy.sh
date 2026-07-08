@@ -4,6 +4,10 @@ set -e
 APP_DIR="/opt/craftconnect"
 cd "$APP_DIR"
 
+echo "==> Pulling latest repo (docker-compose.prod.yml, nginx config, this script)..."
+git fetch origin main
+git reset --hard origin/main
+
 echo "==> Logging into GHCR..."
 echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
