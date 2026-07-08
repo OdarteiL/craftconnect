@@ -30,10 +30,10 @@ const DUMMY_CATEGORIES = [
 
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState(DUMMY_PRODUCTS);
-  const [categories, setCategories] = useState(DUMMY_CATEGORIES);
-  const [pagination, setPagination] = useState({ pages: 1, total: DUMMY_PRODUCTS.length });
-  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [pagination, setPagination] = useState({ pages: 1, total: 0 });
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [category, setCategory] = useState(searchParams.get('category') || '');
@@ -41,10 +41,9 @@ export default function CatalogPage() {
   const [page, setPage] = useState(parseInt(searchParams.get('page')) || 1);
 
   useEffect(() => {
-    // Try to fetch real data, fallback to dummy
-    api.get('/categories').then(r => {
-      if (r.data.categories?.length > 0) setCategories(r.data.categories);
-    }).catch(() => {});
+    api.get('/categories')
+      .then(r => setCategories(r.data.categories || []))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -58,46 +57,11 @@ export default function CatalogPage() {
 
     api.get(`/products?${params.toString()}`)
       .then(r => {
-        if (r.data.products?.length > 0) {
-          setProducts(r.data.products);
-          setPagination(r.data.pagination || {});
-          setLoading(false);
-          return;
-        }
-        throw new Error('No API data');
+        setProducts(r.data.products || []);
+        setPagination(r.data.pagination || { pages: 1, total: 0 });
       })
-      .catch(() => {
-        // Use dummy data with filters
-        let filtered = [...DUMMY_PRODUCTS];
-        
-        // Search filter
-        if (search.trim()) {
-          const searchLower = search.toLowerCase();
-          filtered = filtered.filter(p => 
-            p.name.toLowerCase().includes(searchLower) ||
-            p.artisan.first_name.toLowerCase().includes(searchLower) ||
-            p.artisan.last_name.toLowerCase().includes(searchLower)
-          );
-        }
-        
-        // Category filter
-        if (category && category.trim()) {
-          filtered = filtered.filter(p => p.category.name === category);
-        }
-        
-        // Sort
-        if (sort === 'price_asc') {
-          filtered.sort((a, b) => a.price - b.price);
-        } else if (sort === 'price_desc') {
-          filtered.sort((a, b) => b.price - a.price);
-        } else if (sort === 'name') {
-          filtered.sort((a, b) => a.name.localeCompare(b.name));
-        }
-        
-        setProducts(filtered);
-        setPagination({ pages: 1, total: filtered.length });
-        setLoading(false);
-      });
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
   }, [search, category, sort, page]);
 
   const handleSearch = (e) => {
